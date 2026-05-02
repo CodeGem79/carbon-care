@@ -1,4 +1,6 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
 
 import appCss from "../styles.css?url";
 
@@ -29,11 +31,11 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Litmus — Carbon Compliance Tracker" },
+      { name: "description", content: "Track and manage your organisation's carbon footprint for PPN 06/21 compliance" },
+      { name: "author", content: "Litmus" },
+      { property: "og:title", content: "Litmus — Carbon Compliance Tracker" },
+      { property: "og:description", content: "Track and manage your organisation's carbon footprint for PPN 06/21 compliance" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
@@ -65,5 +67,23 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  return <Outlet />;
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
+        <AppSidebar />
+        <div className="flex flex-1 flex-col">
+          <header className="flex h-14 items-center gap-4 border-b bg-card px-4">
+            <SidebarTrigger />
+            <div className="flex-1" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>FY 2026/27</span>
+            </div>
+          </header>
+          <main className="flex-1 overflow-auto p-6">
+            <Outlet />
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
 }

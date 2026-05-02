@@ -94,8 +94,13 @@ const ChartTooltip = RechartsPrimitive.Tooltip;
 
 const ChartTooltipContent = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
-    React.ComponentProps<"div"> & {
+  React.ComponentProps<"div"> & {
+      active?: boolean;
+      payload?: any[];
+      label?: any;
+      labelFormatter?: (label: any, payload: any[]) => React.ReactNode;
+      formatter?: (value: any, name: any, item: any, index: number, payload: any[]) => React.ReactNode;
+      color?: string;
       hideLabel?: boolean;
       hideIndicator?: boolean;
       indicator?: "line" | "dot" | "dashed";
@@ -113,14 +118,15 @@ const ChartTooltipContent = React.forwardRef<
       hideIndicator = false,
       label,
       labelFormatter,
-      labelClassName,
       formatter,
       color,
       nameKey,
       labelKey,
+      ...restProps
     },
     ref,
   ) => {
+    const labelClassName = (restProps as any).labelClassName as string | undefined;
     const { config } = useChart();
 
     const tooltipLabel = React.useMemo(() => {
@@ -243,14 +249,16 @@ const ChartLegend = RechartsPrimitive.Legend;
 const ChartLegendContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> &
-    Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
+    {
+      payload?: any[];
+      verticalAlign?: "top" | "bottom" | "middle";
       hideIcon?: boolean;
       nameKey?: string;
     }
 >(({ className, hideIcon = false, payload, verticalAlign = "bottom", nameKey }, ref) => {
   const { config } = useChart();
 
-  if (!payload?.length) {
+  if (!payload?.length || !Array.isArray(payload)) {
     return null;
   }
 
@@ -264,8 +272,8 @@ const ChartLegendContent = React.forwardRef<
       )}
     >
       {payload
-        .filter((item) => item.type !== "none")
-        .map((item) => {
+        .filter((item: any) => item.type !== "none")
+        .map((item: any) => {
           const key = `${nameKey || item.dataKey || "value"}`;
           const itemConfig = getPayloadConfigFromPayload(config, item, key);
 

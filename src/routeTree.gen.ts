@@ -9,8 +9,50 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SignOffRouteImport } from './routes/sign-off'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as LocationsRouteImport } from './routes/locations'
+import { Route as HistoryRouteImport } from './routes/history'
+import { Route as GapsRouteImport } from './routes/gaps'
+import { Route as ComplianceRouteImport } from './routes/compliance'
+import { Route as AuditRouteImport } from './routes/audit'
 import { Route as IndexRouteImport } from './routes/index'
 
+const SignOffRoute = SignOffRouteImport.update({
+  id: '/sign-off',
+  path: '/sign-off',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocationsRoute = LocationsRouteImport.update({
+  id: '/locations',
+  path: '/locations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GapsRoute = GapsRouteImport.update({
+  id: '/gaps',
+  path: '/gaps',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComplianceRoute = ComplianceRouteImport.update({
+  id: '/compliance',
+  path: '/compliance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditRoute = AuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +61,130 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/audit': typeof AuditRoute
+  '/compliance': typeof ComplianceRoute
+  '/gaps': typeof GapsRoute
+  '/history': typeof HistoryRoute
+  '/locations': typeof LocationsRoute
+  '/profile': typeof ProfileRoute
+  '/sign-off': typeof SignOffRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/audit': typeof AuditRoute
+  '/compliance': typeof ComplianceRoute
+  '/gaps': typeof GapsRoute
+  '/history': typeof HistoryRoute
+  '/locations': typeof LocationsRoute
+  '/profile': typeof ProfileRoute
+  '/sign-off': typeof SignOffRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/audit': typeof AuditRoute
+  '/compliance': typeof ComplianceRoute
+  '/gaps': typeof GapsRoute
+  '/history': typeof HistoryRoute
+  '/locations': typeof LocationsRoute
+  '/profile': typeof ProfileRoute
+  '/sign-off': typeof SignOffRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/audit'
+    | '/compliance'
+    | '/gaps'
+    | '/history'
+    | '/locations'
+    | '/profile'
+    | '/sign-off'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/audit'
+    | '/compliance'
+    | '/gaps'
+    | '/history'
+    | '/locations'
+    | '/profile'
+    | '/sign-off'
+  id:
+    | '__root__'
+    | '/'
+    | '/audit'
+    | '/compliance'
+    | '/gaps'
+    | '/history'
+    | '/locations'
+    | '/profile'
+    | '/sign-off'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuditRoute: typeof AuditRoute
+  ComplianceRoute: typeof ComplianceRoute
+  GapsRoute: typeof GapsRoute
+  HistoryRoute: typeof HistoryRoute
+  LocationsRoute: typeof LocationsRoute
+  ProfileRoute: typeof ProfileRoute
+  SignOffRoute: typeof SignOffRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sign-off': {
+      id: '/sign-off'
+      path: '/sign-off'
+      fullPath: '/sign-off'
+      preLoaderRoute: typeof SignOffRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/locations': {
+      id: '/locations'
+      path: '/locations'
+      fullPath: '/locations'
+      preLoaderRoute: typeof LocationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gaps': {
+      id: '/gaps'
+      path: '/gaps'
+      fullPath: '/gaps'
+      preLoaderRoute: typeof GapsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compliance': {
+      id: '/compliance'
+      path: '/compliance'
+      fullPath: '/compliance'
+      preLoaderRoute: typeof ComplianceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/audit': {
+      id: '/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +197,13 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuditRoute: AuditRoute,
+  ComplianceRoute: ComplianceRoute,
+  GapsRoute: GapsRoute,
+  HistoryRoute: HistoryRoute,
+  LocationsRoute: LocationsRoute,
+  ProfileRoute: ProfileRoute,
+  SignOffRoute: SignOffRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -118,14 +118,15 @@ const ChartTooltipContent = React.forwardRef<
       hideIndicator = false,
       label,
       labelFormatter,
-      labelClassName,
       formatter,
       color,
       nameKey,
       labelKey,
+      ...restProps
     },
     ref,
   ) => {
+    const labelClassName = (restProps as any).labelClassName as string | undefined;
     const { config } = useChart();
 
     const tooltipLabel = React.useMemo(() => {

@@ -1,24 +1,63 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, FileText, Download, ExternalLink } from "lucide-react";
+import { Search, Download, ExternalLink, Leaf } from "lucide-react";
 
 export const Route = createFileRoute("/history")({
   component: HistoryPage,
 });
 
 const entries = [
-  { id: 1, type: "Electricity", scope: "S2", site: "HQ London", carbon: 245.3, month: "Mar", year: 2026, evidence: true },
-  { id: 2, type: "Gas", scope: "S1", site: "Warehouse Birmingham", carbon: 180.1, month: "Mar", year: 2026, evidence: true },
-  { id: 3, type: "Water", scope: "S3", site: "HQ London", carbon: 12.8, month: "Feb", year: 2026, evidence: false },
-  { id: 4, type: "Diesel", scope: "S1", site: "Fleet", carbon: 520.0, month: "Feb", year: 2026, evidence: true },
-  { id: 5, type: "Electricity", scope: "S2", site: "Office Manchester", carbon: 98.4, month: "Jan", year: 2026, evidence: true },
-  { id: 6, type: "Waste", scope: "S3", site: "Warehouse Birmingham", carbon: 45.2, month: "Jan", year: 2026, evidence: false },
+  { id: 1, type: "Electricity", scope: "S2", site: "HQ London", carbon: 245.3, month: "Apr", year: 2026, evidence: true },
+  { id: 2, type: "Gas", scope: "S1", site: "Warehouse Birmingham", carbon: 180.1, month: "Apr", year: 2026, evidence: true },
+  { id: 3, type: "Water", scope: "S3", site: "HQ London", carbon: 12.8, month: "May", year: 2026, evidence: false },
+  { id: 4, type: "Diesel", scope: "S1", site: "Fleet", carbon: 520.0, month: "May", year: 2026, evidence: true },
+  { id: 5, type: "Electricity", scope: "S2", site: "Office Manchester", carbon: 98.4, month: "Jun", year: 2026, evidence: true },
+  { id: 6, type: "Waste", scope: "S3", site: "Warehouse Birmingham", carbon: 45.2, month: "Jun", year: 2026, evidence: false },
+  { id: 7, type: "Gas", scope: "S1", site: "HQ London", carbon: 210.5, month: "Jul", year: 2026, evidence: true },
+  { id: 8, type: "Electricity", scope: "S2", site: "HQ London", carbon: 198.7, month: "Aug", year: 2026, evidence: true },
+  { id: 9, type: "Water", scope: "S3", site: "Office Manchester", carbon: 9.4, month: "Sep", year: 2026, evidence: false },
+  { id: 10, type: "Diesel", scope: "S1", site: "Fleet", carbon: 485.0, month: "Oct", year: 2026, evidence: true },
+  { id: 11, type: "Electricity", scope: "S2", site: "Warehouse Birmingham", carbon: 155.2, month: "Nov", year: 2026, evidence: true },
+  { id: 12, type: "Waste", scope: "S3", site: "HQ London", carbon: 38.6, month: "Dec", year: 2026, evidence: false },
+  { id: 13, type: "Gas", scope: "S1", site: "HQ London", carbon: 290.3, month: "Jan", year: 2027, evidence: true },
+  { id: 14, type: "Electricity", scope: "S2", site: "Office Manchester", carbon: 112.0, month: "Feb", year: 2027, evidence: true },
+  { id: 15, type: "Water", scope: "S3", site: "HQ London", carbon: 11.2, month: "Mar", year: 2027, evidence: false },
 ];
 
+const MONTHS = ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
+
 function HistoryPage() {
+  const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
+  const [selectedScope, setSelectedScope] = useState<string>("ALL");
+  const [selectedType, setSelectedType] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  const filtered = useMemo(() => {
+    return entries.filter((e) => {
+      if (selectedMonth !== "ALL" && e.month !== selectedMonth) return false;
+      if (selectedScope !== "ALL" && e.scope !== selectedScope) return false;
+      if (selectedType !== "ALL" && e.type !== selectedType) return false;
+      if (searchQuery && !e.site.toLowerCase().includes(searchQuery.toLowerCase()) && !e.type.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      return true;
+    });
+  }, [selectedMonth, selectedScope, selectedType, searchQuery]);
+
+  const totalCarbon = useMemo(() => filtered.reduce((sum, e) => sum + e.carbon, 0), [filtered]);
+  const entryCount = filtered.length;
+
+  const activeFilterLabel = useMemo(() => {
+    const parts: string[] = [];
+    if (selectedMonth !== "ALL") parts.push(selectedMonth);
+    if (selectedScope !== "ALL") parts.push(selectedScope);
+    if (selectedType !== "ALL") parts.push(selectedType);
+    if (searchQuery) parts.push(`"${searchQuery}"`);
+    return parts.length > 0 ? parts.join(" · ") : "All Entries";
+  }, [selectedMonth, selectedScope, selectedType, searchQuery]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -32,12 +71,40 @@ function HistoryPage() {
         </Button>
       </div>
 
+      {/* Month selector strip */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1">
+        <button
+          onClick={() => setSelectedMonth("ALL")}
+          className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+            selectedMonth === "ALL"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted/60 text-muted-foreground hover:bg-muted"
+          }`}
+        >
+          All
+        </button>
+        {MONTHS.map((m) => (
+          <button
+            key={m}
+            onClick={() => setSelectedMonth(m)}
+            className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              selectedMonth === m
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted/60 text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            {m}
+          </button>
+        ))}
+      </div>
+
+      {/* Filters row */}
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search entries..." className="pl-9" />
+          <Input placeholder="Search entries..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
-        <Select defaultValue="ALL">
+        <Select value={selectedScope} onValueChange={setSelectedScope}>
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Scope" />
           </SelectTrigger>
@@ -48,7 +115,7 @@ function HistoryPage() {
             <SelectItem value="S3">Scope 3</SelectItem>
           </SelectContent>
         </Select>
-        <Select defaultValue="ALL">
+        <Select value={selectedType} onValueChange={setSelectedType}>
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Type" />
           </SelectTrigger>
@@ -62,6 +129,25 @@ function HistoryPage() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Totals summary card */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="flex items-center justify-between py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+              <Leaf className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">{activeFilterLabel}</p>
+              <p className="text-2xl font-bold tracking-tight">{totalCarbon.toFixed(1)} <span className="text-sm font-normal text-muted-foreground">kg CO₂e</span></p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Entries</p>
+            <p className="text-xl font-bold">{entryCount}</p>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="p-0">
@@ -78,7 +164,13 @@ function HistoryPage() {
                 </tr>
               </thead>
               <tbody>
-                {entries.map((e) => (
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                      No entries match your filters.
+                    </td>
+                  </tr>
+                ) : filtered.map((e) => (
                   <tr key={e.id} className="border-b transition-colors hover:bg-accent/30">
                     <td className="p-3 font-medium">{e.type}</td>
                     <td className="p-3">

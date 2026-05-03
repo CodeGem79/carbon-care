@@ -12,7 +12,7 @@ import {
   Flame,
   Trash2,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
@@ -39,6 +39,14 @@ const recentEntries = [
   { type: "Electricity", site: "HQ London", carbon: 245.3, month: "Mar 2026" },
   { type: "Gas", site: "Warehouse Birmingham", carbon: 180.1, month: "Mar 2026" },
   { type: "Water", site: "HQ London", carbon: 12.8, month: "Feb 2026" },
+];
+
+const overdueProjects = [
+  { name: "EV Fleet Transition (Phase 1)", targetDate: "2025-12-01", category: "Transport", daysOverdue: 518 },
+];
+
+const dueSoonProjects = [
+  { name: "Install Solar Panels", targetDate: "2026-06-15", category: "Renewable Energy", daysLeft: 43 },
 ];
 
 function DashboardPage() {
@@ -222,6 +230,53 @@ function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Project Accountability */}
+      {(overdueProjects.length > 0 || dueSoonProjects.length > 0) && (
+        <Card className={overdueProjects.length > 0 ? "border-destructive/40" : ""}>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                Project Alerts
+              </CardTitle>
+              <CardDescription>Reduction commitments needing attention</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/projects">
+                View All
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {overdueProjects.map((p, i) => (
+              <div key={i} className="flex items-center justify-between rounded-lg bg-destructive/5 p-3">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-destructive" />
+                  <div>
+                    <p className="text-sm font-medium">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">{p.category} · Overdue by {p.daysOverdue} days</p>
+                  </div>
+                </div>
+                <span className="text-xs font-semibold text-destructive">Compliance Risk</span>
+              </div>
+            ))}
+            {dueSoonProjects.map((p, i) => (
+              <div key={i} className="flex items-center justify-between rounded-lg bg-warning/10 p-3">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-warning" />
+                  <div>
+                    <p className="text-sm font-medium">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">{p.category} · {p.daysLeft} days remaining</p>
+                  </div>
+                </div>
+                <span className="text-xs font-semibold text-warning-foreground">Due Soon</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

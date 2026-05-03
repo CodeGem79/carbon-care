@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Building2, Save, Lock } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/profile")({
   component: ProfilePage,
@@ -81,6 +82,29 @@ function ProfilePage() {
 
       <Card>
         <CardHeader>
+          <CardTitle className="text-base">Board Approval</CardTitle>
+          <CardDescription>PPN 06/21 requires the date the board formally approved the Carbon Reduction Plan</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Board Approval Date</Label>
+              <Input type="date" />
+            </div>
+            <div className="space-y-2">
+              <Label>Approving Authority</Label>
+              <Input placeholder="e.g., Board of Directors" />
+            </div>
+          </div>
+          <Button>
+            <Save className="h-4 w-4" />
+            Save Approval Details
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Lock className="h-4 w-4" />
             Security
@@ -107,10 +131,20 @@ function ProfilePage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>Carbon Commitment Statement</Label>
-            <textarea
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            <Textarea
+              className="min-h-[80px]"
               placeholder="Describe your organisation's carbon reduction commitment..."
             />
+          </div>
+          <div className="space-y-2">
+            <Label>Scope 3 Methodology / Exclusions</Label>
+            <Textarea
+              className="min-h-[80px]"
+              placeholder="e.g., Downstream transportation excluded due to lack of reliable data from logistics partners. Franchises excluded — not applicable to our business model."
+            />
+            <p className="text-xs text-muted-foreground">
+              If any Scope 3 categories are excluded from your footprint, you must document the reason here for PPN 06/21 compliance.
+            </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">

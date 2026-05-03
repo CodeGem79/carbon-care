@@ -8,6 +8,7 @@ import {
   UserCircle,
   FileCheck2,
   Leaf,
+  Rocket,
 } from "lucide-react";
 import {
   Sidebar,
@@ -32,6 +33,7 @@ const mainItems = [
 
 const manageItems = [
   { title: "Locations", url: "/locations", icon: MapPin },
+  { title: "Projects", url: "/projects", icon: Rocket },
   { title: "Gap Finder", url: "/gaps", icon: FileCheck2 },
   { title: "Sign-off", url: "/sign-off", icon: FileCheck2 },
   { title: "Profile", url: "/profile", icon: UserCircle },

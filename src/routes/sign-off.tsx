@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, AlertTriangle, FileText, CheckCircle2, Download } from "lucide-react";
+import { ShieldCheck, AlertTriangle, FileText, CheckCircle2, Download, Target } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Progress } from "@/components/ui/progress";
 
 export const Route = createFileRoute("/sign-off")({
   component: SignOffPage,
@@ -10,6 +12,9 @@ export const Route = createFileRoute("/sign-off")({
 function SignOffPage() {
   const complianceScore = 68;
   const gaps = ["Waste (S3) — 12 months missing", "Business Travel (S3) — 10 months missing"];
+  const totalCommitments = 4;
+  const verifiedCommitments = 1;
+  const commitmentPercent = Math.round((verifiedCommitments / totalCommitments) * 100);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -74,6 +79,29 @@ function SignOffPage() {
       )}
 
       {/* Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Target className="h-4 w-4 text-primary" />
+            Commitment Verification
+          </CardTitle>
+          <CardDescription>{verifiedCommitments} of {totalCommitments} reduction projects verified</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Progress value={commitmentPercent} className="h-2" />
+          <p className="text-sm text-muted-foreground">
+            {commitmentPercent < 50
+              ? "Low verification rate — this will reduce your Tender Readiness Score."
+              : commitmentPercent < 100
+                ? "Good progress. Verify remaining projects to strengthen your application."
+                : "All commitments verified — excellent!"}
+          </p>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/projects">View Projects</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Generate Carbon Reduction Plan</CardTitle>

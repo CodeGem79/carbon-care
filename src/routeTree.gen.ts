@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignOffRouteImport } from './routes/sign-off'
+import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LocationsRouteImport } from './routes/locations'
 import { Route as HistoryRouteImport } from './routes/history'
@@ -21,6 +22,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const SignOffRoute = SignOffRouteImport.update({
   id: '/sign-off',
   path: '/sign-off',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsRoute = ProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/history': typeof HistoryRoute
   '/locations': typeof LocationsRoute
   '/profile': typeof ProfileRoute
+  '/projects': typeof ProjectsRoute
   '/sign-off': typeof SignOffRoute
 }
 export interface FileRoutesByTo {
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRoute
   '/locations': typeof LocationsRoute
   '/profile': typeof ProfileRoute
+  '/projects': typeof ProjectsRoute
   '/sign-off': typeof SignOffRoute
 }
 export interface FileRoutesById {
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/history': typeof HistoryRoute
   '/locations': typeof LocationsRoute
   '/profile': typeof ProfileRoute
+  '/projects': typeof ProjectsRoute
   '/sign-off': typeof SignOffRoute
 }
 export interface FileRouteTypes {
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/locations'
     | '/profile'
+    | '/projects'
     | '/sign-off'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/locations'
     | '/profile'
+    | '/projects'
     | '/sign-off'
   id:
     | '__root__'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/locations'
     | '/profile'
+    | '/projects'
     | '/sign-off'
   fileRoutesById: FileRoutesById
 }
@@ -131,6 +143,7 @@ export interface RootRouteChildren {
   HistoryRoute: typeof HistoryRoute
   LocationsRoute: typeof LocationsRoute
   ProfileRoute: typeof ProfileRoute
+  ProjectsRoute: typeof ProjectsRoute
   SignOffRoute: typeof SignOffRoute
 }
 
@@ -141,6 +154,13 @@ declare module '@tanstack/react-router' {
       path: '/sign-off'
       fullPath: '/sign-off'
       preLoaderRoute: typeof SignOffRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -203,6 +223,7 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryRoute: HistoryRoute,
   LocationsRoute: LocationsRoute,
   ProfileRoute: ProfileRoute,
+  ProjectsRoute: ProjectsRoute,
   SignOffRoute: SignOffRoute,
 }
 export const routeTree = rootRouteImport

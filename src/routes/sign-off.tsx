@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { ShieldCheck, AlertTriangle, FileText, CheckCircle2, Download, Target } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Progress } from "@/components/ui/progress";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ReferenceLine } from "recharts";
+import { useMemo } from "react";
 
 export const Route = createFileRoute("/sign-off")({
   component: SignOffPage,
@@ -15,6 +18,43 @@ function SignOffPage() {
   const totalCommitments = 4;
   const verifiedCommitments = 1;
   const commitmentPercent = Math.round((verifiedCommitments / totalCommitments) * 100);
+
+  // Path to Net Zero data
+  const baselineYear = 2024;
+  const targetYear = 2050;
+  const baselineEmissions = 12500; // kg CO₂e
+  const actualData: Record<number, number> = {
+    2024: 12500,
+    2025: 11800,
+    2026: 11200,
+  };
+
+  const trajectoryData = useMemo(() => {
+    const points: { year: string; baseline: number | null; actual: number | null; target: number }[] = [];
+    const currentYear = new Date().getFullYear();
+    for (let y = baselineYear; y <= targetYear; y++) {
+      const targetValue = Math.max(0, baselineEmissions * (1 - (y - baselineYear) / (targetYear - baselineYear)));
+      points.push({
+        year: String(y),
+        baseline: y === baselineYear ? baselineEmissions : null,
+        actual: actualData[y] ?? null,
+        target: Math.round(targetValue),
+      });
+    }
+    return points;
+  }, []);
+
+  const chartConfig = {
+    actual: { label: "Actual Emissions", color: "var(--primary)" },
+    target: { label: "Target Path", color: "var(--success)" },
+    baseline: { label: "Baseline", color: "var(--warning)" },
+  };
+
+  // Check if actual emissions are above target
+  const latestActualYear = Math.max(...Object.keys(actualData).map(Number));
+  const latestActual = actualData[latestActualYear];
+  const latestTarget = Math.round(baselineEmissions * (1 - (latestActualYear - baselineYear) / (targetYear - baselineYear)));
+  const isAboveTarget = latestActual > latestTarget;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -55,6 +95,94 @@ function SignOffPage() {
               <span className="font-semibold">Incomplete — Gaps Detected</span>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Path to Net Zero */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Target className="h-4 w-4 text-primary" />
+            Path to Net Zero
+          </CardTitle>
+          <CardDescription>
+            Progress against your science-based target trajectory (Baseline {baselineYear} → Net Zero {targetYear})
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isAboveTarget && (
+            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-2 text-sm">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              <span className="text-destructive font-medium">
+                Compliance Risk: Actual emissions ({latestActual.toLocaleString()} kg) are above the target path ({latestTarget.toLocaleString()} kg) for {latestActualYear}.
+              </span>
+            </div>
+          )}
+          <ChartContainer config={chartConfig} className="aspect-[2/1] w-full">
+            <LineChart data={trajectoryData} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
+              <XAxis
+                dataKey="year"
+                tick={{ fontSize: 11 }}
+                interval="preserveStartEnd"
+                tickFormatter={(v) => v}
+              />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`}
+                width={40}
+              />
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    formatter={(value, name) => (
+                      <span>{Number(value).toLocaleString()} kg CO₂e</span>
+                    )}
+                  />
+                }
+              />
+              <Line
+                type="monotone"
+                dataKey="target"
+                stroke="var(--color-target)"
+                strokeWidth={2}
+                strokeDasharray="6 3"
+                dot={false}
+                connectNulls
+                name="target"
+              />
+              <Line
+                type="monotone"
+                dataKey="actual"
+                stroke="var(--color-actual)"
+                strokeWidth={3}
+                dot={{ r: 4, fill: "var(--color-actual)" }}
+                connectNulls
+                name="actual"
+              />
+              <ReferenceLine
+                y={baselineEmissions}
+                stroke="var(--color-baseline)"
+                strokeDasharray="4 4"
+                strokeWidth={1}
+                label={{ value: "Baseline", position: "right", fontSize: 10, fill: "var(--color-baseline)" }}
+              />
+            </LineChart>
+          </ChartContainer>
+          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block h-0.5 w-4 rounded bg-primary" />
+              Actual Emissions
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block h-0.5 w-4 rounded border-t-2 border-dashed border-success" />
+              Target Path (SBTi)
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block h-0.5 w-4 rounded border-t border-dashed border-warning" />
+              Baseline ({baselineYear})
+            </div>
+          </div>
         </CardContent>
       </Card>
 

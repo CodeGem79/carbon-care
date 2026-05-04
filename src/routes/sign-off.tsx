@@ -6,7 +6,8 @@ import { Link } from "@tanstack/react-router";
 import { Progress } from "@/components/ui/progress";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ReferenceLine } from "recharts";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { FileSearch, ChevronDown, ChevronUp } from "lucide-react";
 
 export const Route = createFileRoute("/sign-off")({
   component: SignOffPage,
@@ -206,6 +207,9 @@ function SignOffPage() {
         </Card>
       )}
 
+      {/* Methodology Snapshot */}
+      <MethodologySnapshot />
+
       {/* Actions */}
       <Card>
         <CardHeader>
@@ -252,5 +256,63 @@ function SignOffPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function MethodologySnapshot() {
+  const [expanded, setExpanded] = useState(false);
+
+  // In a real app these would come from shared state / DB
+  const methodology = {
+    rationale: "2024/25 was selected as the baseline year as it represents the first full year of comprehensive data collection post-pandemic, providing a reliable and representative starting point for measuring carbon reduction progress.",
+    exclusions: "Downstream transportation excluded — not applicable to our digital service model. Franchises excluded — the organisation does not operate a franchise model.",
+    calcMethod: "Emissions calculated using DEFRA 2025 conversion factors. Electricity consumption based on meter readings; gas estimated from supplier invoices.",
+  };
+
+  const hasGaps = !methodology.rationale || !methodology.exclusions || !methodology.calcMethod;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <FileSearch className="h-4 w-4 text-primary" />
+            Review Methodology
+          </CardTitle>
+          <Button variant="ghost" size="sm" onClick={() => setExpanded(!expanded)}>
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        </div>
+        <CardDescription>
+          Verify your methodology narratives before generating the report.
+          {hasGaps && " ⚠ Some sections may be incomplete — review on the Profile page."}
+        </CardDescription>
+      </CardHeader>
+      {expanded && (
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Baseline Rationale</p>
+            <div className="rounded-lg border bg-muted/30 p-3 text-sm leading-relaxed">
+              {methodology.rationale || <span className="italic text-destructive">Not provided — complete on Profile page</span>}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Scope 3 Exclusions</p>
+            <div className="rounded-lg border bg-muted/30 p-3 text-sm leading-relaxed">
+              {methodology.exclusions || <span className="italic text-destructive">Not provided — complete on Profile page</span>}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Calculation Methodology</p>
+            <div className="rounded-lg border bg-muted/30 p-3 text-sm leading-relaxed">
+              {methodology.calcMethod || <span className="italic text-destructive">Not provided — complete on Profile page</span>}
+            </div>
+          </div>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/profile">Edit on Profile Page</Link>
+          </Button>
+        </CardContent>
+      )}
+    </Card>
   );
 }

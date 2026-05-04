@@ -4,7 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Download, ExternalLink, Leaf } from "lucide-react";
+import { Search, Download, ExternalLink, Leaf, FileImage, MapPin, Calendar, X } from "lucide-react";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 export const Route = createFileRoute("/history")({
   component: HistoryPage,
@@ -35,6 +46,7 @@ function HistoryPage() {
   const [selectedScope, setSelectedScope] = useState<string>("ALL");
   const [selectedType, setSelectedType] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [drawerEntry, setDrawerEntry] = useState<(typeof entries)[number] | null>(null);
 
   const filtered = useMemo(() => {
     return entries.filter((e) => {
@@ -183,7 +195,10 @@ function HistoryPage() {
                     <td className="p-3 text-right font-semibold">{e.carbon.toFixed(1)}</td>
                     <td className="p-3 text-center">
                       {e.evidence ? (
-                        <button className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                        <button
+                          onClick={() => setDrawerEntry(e)}
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
                           <ExternalLink className="h-3 w-3" />
                           View
                         </button>
@@ -198,6 +213,83 @@ function HistoryPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Evidence Preview Drawer */}
+      <Drawer open={!!drawerEntry} onOpenChange={(open) => !open && setDrawerEntry(null)}>
+        <DrawerContent className="max-h-[85vh]">
+          {drawerEntry && (
+            <>
+              <DrawerHeader>
+                <div className="flex items-center justify-between">
+                  <DrawerTitle className="flex items-center gap-2">
+                    <FileImage className="h-4 w-4 text-primary" />
+                    Evidence — {drawerEntry.type}
+                  </DrawerTitle>
+                  <DrawerClose asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </DrawerClose>
+                </div>
+                <DrawerDescription>
+                  Supporting document for this audit entry
+                </DrawerDescription>
+              </DrawerHeader>
+
+              <div className="space-y-4 overflow-y-auto px-4 pb-2">
+                {/* Document Preview Placeholder */}
+                <div className="flex h-48 items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/30">
+                  <div className="text-center text-muted-foreground">
+                    <FileImage className="mx-auto mb-2 h-10 w-10 opacity-40" />
+                    <p className="text-sm font-medium">Invoice-{drawerEntry.type.toLowerCase()}-{drawerEntry.month.toLowerCase()}{drawerEntry.year}.pdf</p>
+                    <p className="text-xs">Document preview</p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Audit Metadata */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Audit Metadata</h4>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="flex items-center gap-2 rounded-lg border p-3">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Period</p>
+                        <p className="text-sm font-medium">{drawerEntry.month} {drawerEntry.year}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-lg border p-3">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Location</p>
+                        <p className="text-sm font-medium">{drawerEntry.site}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-2">
+                      <Leaf className="h-4 w-4 text-primary" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Carbon Value</p>
+                        <p className="text-sm font-bold">{drawerEntry.carbon.toFixed(1)} kg CO₂e</p>
+                      </div>
+                    </div>
+                    <Badge variant="outline">{drawerEntry.scope}</Badge>
+                  </div>
+                </div>
+              </div>
+
+              <DrawerFooter>
+                <Button className="w-full">
+                  <Download className="h-4 w-4" />
+                  Download for Auditor
+                </Button>
+              </DrawerFooter>
+            </>
+          )}
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

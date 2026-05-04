@@ -87,7 +87,7 @@ function HistoryPage() {
       <div className="flex gap-1.5 overflow-x-auto pb-1">
         <button
           onClick={() => setSelectedMonth("ALL")}
-          className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+          className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${  
             selectedMonth === "ALL"
               ? "bg-primary text-primary-foreground"
               : "bg-muted/60 text-muted-foreground hover:bg-muted"

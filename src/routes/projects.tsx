@@ -227,8 +227,8 @@ function ProjectsPage() {
       setProjects((prev) =>
         prev.map((p) =>
           p.id === editingId
-            ? { ...p, name: formName, category: formCategory, targetDate: formDate, estimatedSavings: Number(formSavings), status: formStatus }
             ? { ...p, name: formName, category: formCategory, targetDate: formDate, estimatedSavings: Number(formSavings), status: formStatus, reminder: formReminder }
+            : p,
         ),
       );
     } else {

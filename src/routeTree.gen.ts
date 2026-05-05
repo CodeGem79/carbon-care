@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignOffRouteImport } from './routes/sign-off'
+import { Route as ReferralRouteImport } from './routes/referral'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LocationsRouteImport } from './routes/locations'
@@ -22,6 +23,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const SignOffRoute = SignOffRouteImport.update({
   id: '/sign-off',
   path: '/sign-off',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReferralRoute = ReferralRouteImport.update({
+  id: '/referral',
+  path: '/referral',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsRoute = ProjectsRouteImport.update({
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/locations': typeof LocationsRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
+  '/referral': typeof ReferralRoute
   '/sign-off': typeof SignOffRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/locations': typeof LocationsRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
+  '/referral': typeof ReferralRoute
   '/sign-off': typeof SignOffRoute
 }
 export interface FileRoutesById {
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/locations': typeof LocationsRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRoute
+  '/referral': typeof ReferralRoute
   '/sign-off': typeof SignOffRoute
 }
 export interface FileRouteTypes {
@@ -110,6 +119,7 @@ export interface FileRouteTypes {
     | '/locations'
     | '/profile'
     | '/projects'
+    | '/referral'
     | '/sign-off'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/locations'
     | '/profile'
     | '/projects'
+    | '/referral'
     | '/sign-off'
   id:
     | '__root__'
@@ -132,6 +143,7 @@ export interface FileRouteTypes {
     | '/locations'
     | '/profile'
     | '/projects'
+    | '/referral'
     | '/sign-off'
   fileRoutesById: FileRoutesById
 }
@@ -144,6 +156,7 @@ export interface RootRouteChildren {
   LocationsRoute: typeof LocationsRoute
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRoute
+  ReferralRoute: typeof ReferralRoute
   SignOffRoute: typeof SignOffRoute
 }
 
@@ -154,6 +167,13 @@ declare module '@tanstack/react-router' {
       path: '/sign-off'
       fullPath: '/sign-off'
       preLoaderRoute: typeof SignOffRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/referral': {
+      id: '/referral'
+      path: '/referral'
+      fullPath: '/referral'
+      preLoaderRoute: typeof ReferralRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects': {
@@ -224,17 +244,9 @@ const rootRouteChildren: RootRouteChildren = {
   LocationsRoute: LocationsRoute,
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRoute,
+  ReferralRoute: ReferralRoute,
   SignOffRoute: SignOffRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

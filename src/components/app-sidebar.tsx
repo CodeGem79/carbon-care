@@ -9,6 +9,7 @@ import {
   FileCheck2,
   Leaf,
   Rocket,
+  Gift,
 } from "lucide-react";
 import {
   Sidebar,
@@ -37,6 +38,7 @@ const manageItems = [
   { title: "Gap Finder", url: "/gaps", icon: FileCheck2 },
   { title: "Sign-off", url: "/sign-off", icon: FileCheck2 },
   { title: "Profile", url: "/profile", icon: UserCircle },
+  { title: "Referral", url: "/referral", icon: Gift },
 ];
 
 export function AppSidebar() {

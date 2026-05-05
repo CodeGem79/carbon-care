@@ -33,6 +33,7 @@ import {
   Target,
   TrendingDown,
   CalendarClock,
+  Bell,
 } from "lucide-react";
 
 export const Route = createFileRoute("/projects")({
@@ -41,6 +42,14 @@ export const Route = createFileRoute("/projects")({
 
 type ProjectStatus = "Planned" | "In Progress" | "Completed";
 type ProjectCategory = "Energy Efficiency" | "Transport" | "Waste" | "Water" | "Renewable Energy" | "Other";
+type ReminderOption = "none" | "10days" | "7days" | "3days";
+
+const reminderOptions: { value: ReminderOption; label: string; days: number }[] = [
+  { value: "none", label: "No Reminder", days: 0 },
+  { value: "10days", label: "10 days before", days: 10 },
+  { value: "7days", label: "1 week before", days: 7 },
+  { value: "3days", label: "3 days before", days: 3 },
+];
 
 interface Project {
   id: string;
@@ -49,6 +58,7 @@ interface Project {
   targetDate: string;
   estimatedSavings: number;
   status: ProjectStatus;
+  reminder: ReminderOption;
   evidence?: string;
   createdAt: string;
 }
@@ -72,6 +82,7 @@ const initialProjects: Project[] = [
     targetDate: "2026-09-30",
     estimatedSavings: 500,
     status: "In Progress",
+    reminder: "7days",
     createdAt: "2026-01-15",
   },
   {
@@ -81,6 +92,7 @@ const initialProjects: Project[] = [
     targetDate: "2026-06-15",
     estimatedSavings: 2400,
     status: "Planned",
+    reminder: "10days",
     createdAt: "2026-02-01",
   },
   {
@@ -90,6 +102,7 @@ const initialProjects: Project[] = [
     targetDate: "2025-12-01",
     estimatedSavings: 1800,
     status: "Planned",
+    reminder: "3days",
     createdAt: "2025-06-10",
   },
   {
@@ -100,6 +113,7 @@ const initialProjects: Project[] = [
     estimatedSavings: 320,
     status: "Completed",
     evidence: "invoice-waste-2026.pdf",
+    reminder: "none",
     createdAt: "2025-09-20",
   },
 ];
@@ -116,6 +130,17 @@ function getProjectUrgency(project: Project): "overdue" | "due-soon" | "on-track
   if (days < 0) return "overdue";
   if (days <= 30) return "due-soon";
   return "on-track";
+}
+
+function getReminderStatus(project: Project): { active: boolean; label: string } | null {
+  if (project.status === "Completed" || project.reminder === "none") return null;
+  const opt = reminderOptions.find((r) => r.value === project.reminder);
+  if (!opt) return null;
+  const daysLeft = getDaysUntil(project.targetDate);
+  if (daysLeft <= opt.days && daysLeft >= 0) {
+    return { active: true, label: `⏰ Reminder: ${daysLeft} day${daysLeft !== 1 ? "s" : ""} until deadline` };
+  }
+  return { active: false, label: `Reminder set: ${opt.label}` };
 }
 
 function statusBadgeClass(status: ProjectStatus) {
@@ -168,6 +193,7 @@ function ProjectsPage() {
   const [formDate, setFormDate] = useState("");
   const [formSavings, setFormSavings] = useState("");
   const [formStatus, setFormStatus] = useState<ProjectStatus>("Planned");
+  const [formReminder, setFormReminder] = useState<ReminderOption>("7days");
 
   const resetForm = () => {
     setFormName("");
@@ -175,6 +201,7 @@ function ProjectsPage() {
     setFormDate("");
     setFormSavings("");
     setFormStatus("Planned");
+    setFormReminder("7days");
     setEditingId(null);
   };
 
@@ -189,6 +216,7 @@ function ProjectsPage() {
     setFormDate(p.targetDate);
     setFormSavings(String(p.estimatedSavings));
     setFormStatus(p.status);
+    setFormReminder(p.reminder);
     setEditingId(p.id);
     setDialogOpen(true);
   };
@@ -199,7 +227,7 @@ function ProjectsPage() {
       setProjects((prev) =>
         prev.map((p) =>
           p.id === editingId
-            ? { ...p, name: formName, category: formCategory, targetDate: formDate, estimatedSavings: Number(formSavings), status: formStatus }
+            ? { ...p, name: formName, category: formCategory, targetDate: formDate, estimatedSavings: Number(formSavings), status: formStatus, reminder: formReminder }
             : p,
         ),
       );
@@ -211,6 +239,7 @@ function ProjectsPage() {
         targetDate: formDate,
         estimatedSavings: Number(formSavings),
         status: formStatus,
+        reminder: formReminder,
         createdAt: new Date().toISOString().slice(0, 10),
       };
       setProjects((prev) => [...prev, newProject]);
@@ -267,6 +296,20 @@ function ProjectsPage() {
                     ))}
                   </SelectContent>
                 </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Bell className="h-3.5 w-3.5" />
+                Deadline Reminder
+              </Label>
+              <Select value={formReminder} onValueChange={(v) => setFormReminder(v as ReminderOption)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {reminderOptions.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -393,6 +436,7 @@ function ProjectsPage() {
         {projects.map((project) => {
           const urgency = getProjectUrgency(project);
           const daysLeft = getDaysUntil(project.targetDate);
+          const reminderStatus = getReminderStatus(project);
           return (
             <Card
               key={project.id}
@@ -444,6 +488,13 @@ function ProjectsPage() {
                   <div className="rounded-md bg-warning/10 p-2.5 text-xs text-warning-foreground flex items-center gap-1.5">
                     <Clock className="h-3.5 w-3.5" />
                     {daysLeft} day{daysLeft !== 1 ? "s" : ""} remaining — is this project complete?
+                  </div>
+                )}
+
+                {reminderStatus && (
+                  <div className={`rounded-md p-2.5 text-xs flex items-center gap-1.5 ${reminderStatus.active ? "bg-primary/10 text-primary font-semibold" : "bg-muted/50 text-muted-foreground"}`}>
+                    <Bell className="h-3.5 w-3.5" />
+                    {reminderStatus.label}
                   </div>
                 )}
 

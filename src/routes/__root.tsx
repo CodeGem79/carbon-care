@@ -1,6 +1,9 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import appCss from "../styles.css?url";
 
@@ -66,6 +69,32 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function ThemeToggle() {
+  const [dark, setDark] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("theme") === "dark";
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (dark) {
+      root.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      root.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [dark]);
+
+  return (
+    <Button variant="ghost" size="icon" onClick={() => setDark(!dark)} className="h-8 w-8">
+      {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+    </Button>
+  );
+}
+
 function RootComponent() {
   return (
     <SidebarProvider>
@@ -76,6 +105,7 @@ function RootComponent() {
             <SidebarTrigger />
             <div className="flex-1" />
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <ThemeToggle />
               <span>FY 2026/27</span>
             </div>
           </header>
@@ -83,7 +113,7 @@ function RootComponent() {
             <Outlet />
           </main>
         </div>
-      </div>
+        </div>
     </SidebarProvider>
   );
 }

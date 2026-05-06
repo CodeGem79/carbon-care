@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Download, ExternalLink, Leaf, FileImage, MapPin, Calendar, X } from "lucide-react";
+import { Search, Download, ExternalLink, Leaf, FileImage, MapPin, Calendar, X, Trash2 } from "lucide-react";
 import {
   Drawer,
   DrawerClose,
@@ -58,16 +58,21 @@ function HistoryPage() {
   const [selectedType, setSelectedType] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [drawerEntry, setDrawerEntry] = useState<Entry | null>(null);
+  const [entries, setEntries] = useState<Entry[]>(allEntries);
 
   const filtered = useMemo(() => {
-    return allEntries.filter((e) => {
+    return entries.filter((e) => {
       if (selectedMonth !== "ALL" && e.month !== selectedMonth) return false;
       if (selectedScope !== "ALL" && e.scope !== selectedScope) return false;
       if (selectedType !== "ALL" && e.type !== selectedType) return false;
       if (searchQuery && !e.site.toLowerCase().includes(searchQuery.toLowerCase()) && !e.type.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     });
-  }, [selectedMonth, selectedScope, selectedType, searchQuery]);
+  }, [selectedMonth, selectedScope, selectedType, searchQuery, entries]);
+
+  const handleDelete = (id: number) => {
+    setEntries((prev) => prev.filter((e) => e.id !== id));
+  };
 
   const totalCarbon = useMemo(() => filtered.reduce((sum, e) => sum + e.carbon, 0), [filtered]);
 
@@ -158,6 +163,7 @@ function HistoryPage() {
                   <th className="p-3 text-left font-medium text-muted-foreground">Period</th>
                   <th className="p-3 text-right font-medium text-muted-foreground">Carbon (kg CO₂e)</th>
                   <th className="p-3 text-center font-medium text-muted-foreground">Evidence</th>
+                  <th className="p-3 text-center font-medium text-muted-foreground">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -178,6 +184,11 @@ function HistoryPage() {
                       ) : (
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
+                    </td>
+                    <td className="p-3 text-center">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(e.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </td>
                   </tr>
                 ))}

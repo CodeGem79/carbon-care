@@ -70,7 +70,26 @@ function ProfilePage() {
 
           <div className="space-y-2">
             <Label>Monthly Carbon Target (kg CO₂e)</Label>
-            <Input type="number" placeholder="500" defaultValue="500" />
+            <Input type="number" placeholder="Total target (auto-calculated)" defaultValue="500" disabled className="bg-muted/50" />
+            <p className="text-xs text-muted-foreground">Total is the sum of the three scope targets below</p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Scope 1 Target</Label>
+              <Input type="number" placeholder="200" defaultValue="200" />
+              <p className="text-xs text-muted-foreground">Direct emissions</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Scope 2 Target</Label>
+              <Input type="number" placeholder="200" defaultValue="200" />
+              <p className="text-xs text-muted-foreground">Indirect (energy)</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Scope 3 Target</Label>
+              <Input type="number" placeholder="100" defaultValue="100" />
+              <p className="text-xs text-muted-foreground">Value chain</p>
+            </div>
           </div>
 
           <Button>

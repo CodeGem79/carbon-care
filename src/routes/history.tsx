@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Download, ExternalLink, Leaf, FileImage, MapPin, Calendar, X, Trash2 } from "lucide-react";
+import { Search, Download, ExternalLink, Leaf, FileImage, MapPin, Calendar, X, Trash2, Target } from "lucide-react";
 import {
   Drawer,
   DrawerClose,
@@ -52,6 +52,9 @@ const allEntries: Entry[] = [
 
 const MONTHS = ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
 
+const MONTHLY_TARGET = { s1: 200, s2: 200, s3: 100 };
+const TOTAL_TARGET = MONTHLY_TARGET.s1 + MONTHLY_TARGET.s2 + MONTHLY_TARGET.s3;
+
 function HistoryPage() {
   const [selectedMonth, setSelectedMonth] = useState("ALL");
   const [selectedScope, setSelectedScope] = useState("ALL");
@@ -76,6 +79,18 @@ function HistoryPage() {
 
   const totalCarbon = useMemo(() => filtered.reduce((sum, e) => sum + e.carbon, 0), [filtered]);
 
+  const scopeTotals = useMemo(() => {
+    const s1 = entries.reduce((sum, e) => sum + (e.scope === "S1" ? e.carbon : 0), 0);
+    const s2 = entries.reduce((sum, e) => sum + (e.scope === "S2" ? e.carbon : 0), 0);
+    const s3 = entries.reduce((sum, e) => sum + (e.scope === "S3" ? e.carbon : 0), 0);
+    return { s1, s2, s3, total: s1 + s2 + s3 };
+  }, [entries]);
+
+  const progressPct = Math.min((scopeTotals.total / TOTAL_TARGET) * 100, 100);
+  const s1Pct = (scopeTotals.s1 / TOTAL_TARGET) * 100;
+  const s2Pct = (scopeTotals.s2 / TOTAL_TARGET) * 100;
+  const s3Pct = (scopeTotals.s3 / TOTAL_TARGET) * 100;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -88,6 +103,72 @@ function HistoryPage() {
           Export CSV
         </Button>
       </div>
+
+      {/* Carbon Target Progress Bar */}
+      <Card className="border-border">
+        <CardContent className="space-y-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold">Monthly Carbon Target</span>
+            </div>
+            <span className="text-sm font-bold">
+              {scopeTotals.total.toFixed(1)} <span className="text-muted-foreground font-normal">/ {TOTAL_TARGET} kg CO₂e</span>
+            </span>
+          </div>
+
+          {/* Segmented bar */}
+          <div className="relative h-6 w-full overflow-hidden rounded-full bg-muted/40">
+            <div className="absolute inset-0 flex h-full">
+              <div
+                className="h-full bg-red-500 transition-all duration-500"
+                style={{ width: `${Math.min(s1Pct, 100)}%` }}
+                title={`Scope 1: ${scopeTotals.s1.toFixed(1)} kg`}
+              />
+              <div
+                className="h-full bg-blue-500 transition-all duration-500"
+                style={{ width: `${Math.min(s2Pct, 100 - Math.min(s1Pct, 100))}%` }}
+                title={`Scope 2: ${scopeTotals.s2.toFixed(1)} kg`}
+              />
+              <div
+                className="h-full bg-amber-500 transition-all duration-500"
+                style={{ width: `${Math.min(s3Pct, 100 - Math.min(s1Pct + s2Pct, 100))}%` }}
+                title={`Scope 3: ${scopeTotals.s3.toFixed(1)} kg`}
+              />
+            </div>
+            {/* Target marker line */}
+            <div className="absolute right-0 top-0 h-full w-0.5 bg-foreground/60" />
+          </div>
+
+          {/* Legend */}
+          <div className="flex flex-wrap gap-4 text-xs">
+            <div className="flex items-center gap-1.5">
+              <div className="h-3 w-3 rounded-sm bg-red-500" />
+              <span className="text-muted-foreground">Scope 1</span>
+              <span className="font-semibold">{scopeTotals.s1.toFixed(1)} kg</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="h-3 w-3 rounded-sm bg-blue-500" />
+              <span className="text-muted-foreground">Scope 2</span>
+              <span className="font-semibold">{scopeTotals.s2.toFixed(1)} kg</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="h-3 w-3 rounded-sm bg-amber-500" />
+              <span className="text-muted-foreground">Scope 3</span>
+              <span className="font-semibold">{scopeTotals.s3.toFixed(1)} kg</span>
+            </div>
+            <div className="ml-auto flex items-center gap-1.5">
+              <div className="h-3 w-0.5 bg-foreground/60" />
+              <span className="text-muted-foreground">Target</span>
+              <span className="font-semibold">{TOTAL_TARGET} kg</span>
+            </div>
+          </div>
+
+          {progressPct >= 100 && (
+            <p className="text-xs font-medium text-destructive">⚠️ Monthly carbon target reached</p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Month selector strip */}
       <div className="flex gap-1.5 overflow-x-auto pb-1">

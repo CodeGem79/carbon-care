@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -34,6 +36,8 @@ import {
   TrendingDown,
   CalendarClock,
   Bell,
+  Calculator,
+  ListChecks,
 } from "lucide-react";
 
 export const Route = createFileRoute("/projects")({
@@ -43,6 +47,22 @@ export const Route = createFileRoute("/projects")({
 type ProjectStatus = "Planned" | "In Progress" | "Completed";
 type ProjectCategory = "Energy Efficiency" | "Transport" | "Waste" | "Water" | "Renewable Energy" | "Other";
 type ReminderOption = "none" | "10days" | "7days" | "3days";
+type WizardMode = "energy" | "transport" | "custom";
+type FuelType = "Petrol" | "Diesel" | "EV";
+
+const MILESTONES = [
+  "Project Scoped & Quote Received",
+  "Internal Approval & Budget Secured",
+  "Implementation/Installation Started",
+  "Completion & Evidence Collection",
+];
+
+const FUEL_FACTORS: Record<FuelType, number> = {
+  Petrol: 0.28,
+  Diesel: 0.27,
+  EV: 0.05,
+};
+const KWH_FACTOR = 0.207;
 
 const reminderOptions: { value: ReminderOption; label: string; days: number }[] = [
   { value: "none", label: "No Reminder", days: 0 },
@@ -61,6 +81,8 @@ interface Project {
   reminder: ReminderOption;
   evidence?: string;
   createdAt: string;
+  calculationNote?: string;
+  milestonesCompleted?: number[];
 }
 
 const categoryOptions: ProjectCategory[] = [
@@ -84,6 +106,8 @@ const initialProjects: Project[] = [
     status: "In Progress",
     reminder: "7days",
     createdAt: "2026-01-15",
+    milestonesCompleted: [0, 1],
+    calculationNote: "Reduced 2,415 kWh at 0.207 kg/kWh factor",
   },
   {
     id: "2",
@@ -94,6 +118,7 @@ const initialProjects: Project[] = [
     status: "Planned",
     reminder: "10days",
     createdAt: "2026-02-01",
+    milestonesCompleted: [],
   },
   {
     id: "3",
@@ -104,6 +129,7 @@ const initialProjects: Project[] = [
     status: "Planned",
     reminder: "3days",
     createdAt: "2025-06-10",
+    milestonesCompleted: [],
   },
   {
     id: "4",
@@ -115,6 +141,7 @@ const initialProjects: Project[] = [
     evidence: "invoice-waste-2026.pdf",
     reminder: "none",
     createdAt: "2025-09-20",
+    milestonesCompleted: [0, 1, 2, 3],
   },
 ];
 
@@ -194,6 +221,48 @@ function ProjectsPage() {
   const [formSavings, setFormSavings] = useState("");
   const [formStatus, setFormStatus] = useState<ProjectStatus>("Planned");
   const [formReminder, setFormReminder] = useState<ReminderOption>("7days");
+  const [formNote, setFormNote] = useState("");
+
+  // Wizard state
+  const [wizardMode, setWizardMode] = useState<WizardMode>("energy");
+  const [currentKwh, setCurrentKwh] = useState("");
+  const [newKwh, setNewKwh] = useState("");
+  const [annualMiles, setAnnualMiles] = useState("");
+  const [fuelType, setFuelType] = useState<FuelType>("Petrol");
+  const [customSavings, setCustomSavings] = useState("");
+
+  // Recompute savings + note as wizard inputs change
+  const recompute = (
+    mode: WizardMode,
+    cur: string,
+    nw: string,
+    miles: string,
+    fuel: FuelType,
+    custom: string,
+  ) => {
+    if (mode === "energy") {
+      const c = Number(cur) || 0;
+      const n = Number(nw) || 0;
+      const reduced = Math.max(c - n, 0);
+      const savings = Math.round(reduced * KWH_FACTOR);
+      setFormSavings(String(savings));
+      setFormNote(reduced > 0
+        ? `Reduced ${reduced.toLocaleString()} kWh at ${KWH_FACTOR} kg/kWh factor = ${savings.toLocaleString()} kg CO₂e`
+        : "");
+    } else if (mode === "transport") {
+      const m = Number(miles) || 0;
+      const factor = FUEL_FACTORS[fuel];
+      const savings = Math.round(m * factor);
+      setFormSavings(String(savings));
+      setFormNote(m > 0
+        ? `${m.toLocaleString()} ${fuel} miles avoided at ${factor} kg/mile factor = ${savings.toLocaleString()} kg CO₂e`
+        : "");
+    } else {
+      const v = Number(custom) || 0;
+      setFormSavings(String(v));
+      setFormNote(v > 0 ? `Manual estimate: ${v.toLocaleString()} kg CO₂e (user-entered)` : "");
+    }
+  };
 
   const resetForm = () => {
     setFormName("");
@@ -203,6 +272,13 @@ function ProjectsPage() {
     setFormStatus("Planned");
     setFormReminder("7days");
     setEditingId(null);
+    setFormNote("");
+    setWizardMode("energy");
+    setCurrentKwh("");
+    setNewKwh("");
+    setAnnualMiles("");
+    setFuelType("Petrol");
+    setCustomSavings("");
   };
 
   const openNew = () => {
@@ -218,6 +294,9 @@ function ProjectsPage() {
     setFormStatus(p.status);
     setFormReminder(p.reminder);
     setEditingId(p.id);
+    setFormNote(p.calculationNote ?? "");
+    setWizardMode("custom");
+    setCustomSavings(String(p.estimatedSavings));
     setDialogOpen(true);
   };
 
@@ -227,7 +306,7 @@ function ProjectsPage() {
       setProjects((prev) =>
         prev.map((p) =>
           p.id === editingId
-            ? { ...p, name: formName, category: formCategory, targetDate: formDate, estimatedSavings: Number(formSavings), status: formStatus, reminder: formReminder }
+            ? { ...p, name: formName, category: formCategory, targetDate: formDate, estimatedSavings: Number(formSavings), status: formStatus, reminder: formReminder, calculationNote: formNote }
             : p,
         ),
       );
@@ -241,6 +320,8 @@ function ProjectsPage() {
         status: formStatus,
         reminder: formReminder,
         createdAt: new Date().toISOString().slice(0, 10),
+        calculationNote: formNote,
+        milestonesCompleted: [],
       };
       setProjects((prev) => [...prev, newProject]);
     }
@@ -250,6 +331,35 @@ function ProjectsPage() {
 
   const handleDelete = (id: string) => {
     setProjects((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const toggleMilestone = (projectId: string, idx: number) => {
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== projectId) return p;
+        const current = p.milestonesCompleted ?? [];
+        const next = current.includes(idx)
+          ? current.filter((i) => i !== idx)
+          : [...current, idx];
+        return { ...p, milestonesCompleted: next };
+      }),
+    );
+  };
+
+  const markEvidenceUploaded = (projectId: string) => {
+    const filename = `evidence-${projectId.slice(0, 6)}-${new Date().getFullYear()}.pdf`;
+    setProjects((prev) =>
+      prev.map((p) =>
+        p.id === projectId
+          ? {
+              ...p,
+              evidence: filename,
+              status: "Completed" as ProjectStatus,
+              milestonesCompleted: [0, 1, 2, 3],
+            }
+          : p,
+      ),
+    );
   };
 
   // stats

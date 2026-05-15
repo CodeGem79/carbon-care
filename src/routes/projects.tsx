@@ -119,7 +119,12 @@ const initialProjects: Project[] = [
     status: "In Progress",
     reminder: "7days",
     createdAt: "2026-01-15",
-    milestonesCompleted: [0, 1],
+    milestones: [
+      { id: "m1a", label: DEFAULT_MILESTONE_LABELS[0], done: true },
+      { id: "m1b", label: DEFAULT_MILESTONE_LABELS[1], done: true },
+      { id: "m1c", label: DEFAULT_MILESTONE_LABELS[2], done: false },
+      { id: "m1d", label: DEFAULT_MILESTONE_LABELS[3], done: false },
+    ],
     calculationNote: "Reduced 2,415 kWh at 0.207 kg/kWh factor",
   },
   {
@@ -131,7 +136,7 @@ const initialProjects: Project[] = [
     status: "Planned",
     reminder: "10days",
     createdAt: "2026-02-01",
-    milestonesCompleted: [],
+    milestones: makeDefaultMilestones(),
   },
   {
     id: "3",
@@ -142,7 +147,7 @@ const initialProjects: Project[] = [
     status: "Planned",
     reminder: "3days",
     createdAt: "2025-06-10",
-    milestonesCompleted: [],
+    milestones: makeDefaultMilestones(),
   },
   {
     id: "4",
@@ -154,7 +159,11 @@ const initialProjects: Project[] = [
     evidence: "invoice-waste-2026.pdf",
     reminder: "none",
     createdAt: "2025-09-20",
-    milestonesCompleted: [0, 1, 2, 3],
+    milestones: DEFAULT_MILESTONE_LABELS.map((label, i) => ({
+      id: `m4-${i}`,
+      label,
+      done: true,
+    })),
   },
 ];
 
@@ -334,7 +343,7 @@ function ProjectsPage() {
         reminder: formReminder,
         createdAt: new Date().toISOString().slice(0, 10),
         calculationNote: formNote,
-        milestonesCompleted: [],
+        milestones: makeDefaultMilestones(),
       };
       setProjects((prev) => [...prev, newProject]);
     }
@@ -346,15 +355,60 @@ function ProjectsPage() {
     setProjects((prev) => prev.filter((p) => p.id !== id));
   };
 
-  const toggleMilestone = (projectId: string, idx: number) => {
+  const toggleMilestone = (projectId: string, milestoneId: string) => {
     setProjects((prev) =>
       prev.map((p) => {
         if (p.id !== projectId) return p;
-        const current = p.milestonesCompleted ?? [];
-        const next = current.includes(idx)
-          ? current.filter((i) => i !== idx)
-          : [...current, idx];
-        return { ...p, milestonesCompleted: next };
+        return {
+          ...p,
+          milestones: p.milestones.map((m) =>
+            m.id === milestoneId ? { ...m, done: !m.done } : m,
+          ),
+        };
+      }),
+    );
+  };
+
+  const addMilestone = (projectId: string, label: string) => {
+    const trimmed = label.trim();
+    if (!trimmed) return;
+    setProjects((prev) =>
+      prev.map((p) =>
+        p.id === projectId
+          ? {
+              ...p,
+              milestones: [
+                ...p.milestones,
+                { id: crypto.randomUUID(), label: trimmed, done: false },
+              ],
+            }
+          : p,
+      ),
+    );
+  };
+
+  const renameMilestone = (projectId: string, milestoneId: string, label: string) => {
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== projectId) return p;
+        return {
+          ...p,
+          milestones: p.milestones.map((m) =>
+            m.id === milestoneId ? { ...m, label } : m,
+          ),
+        };
+      }),
+    );
+  };
+
+  const deleteMilestone = (projectId: string, milestoneId: string) => {
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== projectId) return p;
+        return {
+          ...p,
+          milestones: p.milestones.filter((m) => m.id !== milestoneId),
+        };
       }),
     );
   };
@@ -368,7 +422,7 @@ function ProjectsPage() {
               ...p,
               evidence: filename,
               status: "Completed" as ProjectStatus,
-              milestonesCompleted: [0, 1, 2, 3],
+              milestones: p.milestones.map((m) => ({ ...m, done: true })),
             }
           : p,
       ),

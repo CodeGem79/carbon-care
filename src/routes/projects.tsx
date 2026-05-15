@@ -428,9 +428,126 @@ function ProjectsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Estimated Savings (kg CO₂e)</Label>
-                  <Input type="number" placeholder="500" value={formSavings} onChange={(e) => setFormSavings(e.target.value)} />
+                  <Input type="number" value={formSavings} readOnly className="bg-muted/40 font-semibold" />
                 </div>
               </div>
+
+              {/* Carbon Savings Wizard */}
+              <div className="rounded-lg bg-muted/50 border p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Calculator className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold">Carbon Savings Wizard</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Calculation Mode</Label>
+                  <Select
+                    value={wizardMode}
+                    onValueChange={(v) => {
+                      const m = v as WizardMode;
+                      setWizardMode(m);
+                      recompute(m, currentKwh, newKwh, annualMiles, fuelType, customSavings);
+                    }}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="energy">Energy (kWh)</SelectItem>
+                      <SelectItem value="transport">Transport (Miles)</SelectItem>
+                      <SelectItem value="custom">Custom (Manual)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {wizardMode === "energy" && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Current Annual kWh</Label>
+                      <Input
+                        type="number"
+                        placeholder="10000"
+                        value={currentKwh}
+                        onChange={(e) => {
+                          setCurrentKwh(e.target.value);
+                          recompute("energy", e.target.value, newKwh, annualMiles, fuelType, customSavings);
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Estimated New kWh</Label>
+                      <Input
+                        type="number"
+                        placeholder="5000"
+                        value={newKwh}
+                        onChange={(e) => {
+                          setNewKwh(e.target.value);
+                          recompute("energy", currentKwh, e.target.value, annualMiles, fuelType, customSavings);
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {wizardMode === "transport" && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Annual Miles Avoided</Label>
+                      <Input
+                        type="number"
+                        placeholder="5000"
+                        value={annualMiles}
+                        onChange={(e) => {
+                          setAnnualMiles(e.target.value);
+                          recompute("transport", currentKwh, newKwh, e.target.value, fuelType, customSavings);
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Fuel Type</Label>
+                      <Select
+                        value={fuelType}
+                        onValueChange={(v) => {
+                          const f = v as FuelType;
+                          setFuelType(f);
+                          recompute("transport", currentKwh, newKwh, annualMiles, f, customSavings);
+                        }}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Petrol">Petrol (0.28 kg/mi)</SelectItem>
+                          <SelectItem value="Diesel">Diesel (0.27 kg/mi)</SelectItem>
+                          <SelectItem value="EV">EV (0.05 kg/mi)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+
+                {wizardMode === "custom" && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Manual kg CO₂e</Label>
+                    <Input
+                      type="number"
+                      placeholder="500"
+                      value={customSavings}
+                      onChange={(e) => {
+                        setCustomSavings(e.target.value);
+                        recompute("custom", currentKwh, newKwh, annualMiles, fuelType, e.target.value);
+                      }}
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Calculation Note (Audit Trail)</Label>
+                  <Textarea
+                    rows={2}
+                    value={formNote}
+                    onChange={(e) => setFormNote(e.target.value)}
+                    placeholder="Auto-filled from wizard inputs — editable for audit context"
+                    className="text-xs bg-background"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={formStatus} onValueChange={(v) => setFormStatus(v as ProjectStatus)}>

@@ -664,6 +664,11 @@ function ProjectsPage() {
           const urgency = getProjectUrgency(project);
           const daysLeft = getDaysUntil(project.targetDate);
           const reminderStatus = getReminderStatus(project);
+          const milestones = project.milestonesCompleted ?? [];
+          const milestonesDone = milestones.length;
+          const firstThreeDone = [0, 1, 2].every((i) => milestones.includes(i));
+          const isCompleted = project.status === "Completed";
+          const progressColor = isCompleted ? "bg-success" : "bg-primary";
           return (
             <Card
               key={project.id}
@@ -704,6 +709,48 @@ function ProjectsPage() {
                   </div>
                 </div>
 
+                {/* Milestone progress bar */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <ListChecks className="h-3.5 w-3.5" />
+                      Milestones
+                    </span>
+                    <span className="font-semibold">{milestonesDone}/{MILESTONES.length}</span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={`h-full transition-all duration-500 ${progressColor}`}
+                      style={{ width: `${(milestonesDone / MILESTONES.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Milestone checklist (In Progress only) */}
+                {project.status === "In Progress" && (
+                  <div className="space-y-1.5 rounded-md border bg-muted/30 p-2.5">
+                    {MILESTONES.map((label, idx) => {
+                      const checked = milestones.includes(idx);
+                      const isFinal = idx === MILESTONES.length - 1;
+                      return (
+                        <label
+                          key={idx}
+                          className={`flex items-start gap-2 text-xs cursor-pointer rounded px-1.5 py-1 ${isFinal ? "bg-success/10 border border-success/30" : ""}`}
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={() => toggleMilestone(project.id, idx)}
+                            className="mt-0.5"
+                          />
+                          <span className={`leading-tight ${checked ? "line-through text-muted-foreground" : ""} ${isFinal ? "font-semibold" : ""}`}>
+                            {label}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {urgency === "overdue" && (
                   <div className="rounded-md bg-destructive/5 p-2.5 text-xs text-destructive flex items-center gap-1.5">
                     <AlertTriangle className="h-3.5 w-3.5" />
@@ -731,10 +778,23 @@ function ProjectsPage() {
                     Evidence: {project.evidence}
                   </div>
                 ) : project.status !== "Completed" ? (
-                  <Button variant="outline" size="sm" className="w-full text-xs">
-                    <Upload className="h-3.5 w-3.5" />
-                    Upload Evidence to Verify
-                  </Button>
+                  <div className="space-y-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                      disabled={!firstThreeDone}
+                      onClick={() => markEvidenceUploaded(project.id)}
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      Upload Evidence to Verify
+                    </Button>
+                    {!firstThreeDone && (
+                      <p className="text-[10px] text-muted-foreground text-center">
+                        Complete first 3 milestones to unlock
+                      </p>
+                    )}
+                  </div>
                 ) : null}
               </CardContent>
             </Card>

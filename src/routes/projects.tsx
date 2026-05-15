@@ -731,9 +731,15 @@ function ProjectsPage() {
           const urgency = getProjectUrgency(project);
           const daysLeft = getDaysUntil(project.targetDate);
           const reminderStatus = getReminderStatus(project);
-          const milestones = project.milestonesCompleted ?? [];
-          const milestonesDone = milestones.length;
-          const firstThreeDone = [0, 1, 2].every((i) => milestones.includes(i));
+          const milestones = project.milestones;
+          const milestonesDone = milestones.filter((m) => m.done).length;
+          const milestonesTotal = milestones.length;
+          // Evidence unlocks when every milestone except the last is done.
+          // (Last milestone = "Completion & Evidence Collection")
+          const allButLastDone =
+            milestonesTotal >= 2 &&
+            milestones.slice(0, -1).every((m) => m.done);
+          const evidenceUnlocked = milestonesTotal === 0 ? true : allButLastDone;
           const isCompleted = project.status === "Completed";
           const progressColor = isCompleted ? "bg-success" : "bg-primary";
           return (
@@ -783,39 +789,25 @@ function ProjectsPage() {
                       <ListChecks className="h-3.5 w-3.5" />
                       Milestones
                     </span>
-                    <span className="font-semibold">{milestonesDone}/{MILESTONES.length}</span>
+                    <span className="font-semibold">{milestonesDone}/{milestonesTotal}</span>
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                     <div
                       className={`h-full transition-all duration-500 ${progressColor}`}
-                      style={{ width: `${(milestonesDone / MILESTONES.length) * 100}%` }}
+                      style={{ width: `${milestonesTotal > 0 ? (milestonesDone / milestonesTotal) * 100 : 0}%` }}
                     />
                   </div>
                 </div>
 
-                {/* Milestone checklist (In Progress only) */}
+                {/* Milestone checklist — editable when In Progress */}
                 {project.status === "In Progress" && (
-                  <div className="space-y-1.5 rounded-md border bg-muted/30 p-2.5">
-                    {MILESTONES.map((label, idx) => {
-                      const checked = milestones.includes(idx);
-                      const isFinal = idx === MILESTONES.length - 1;
-                      return (
-                        <label
-                          key={idx}
-                          className={`flex items-start gap-2 text-xs cursor-pointer rounded px-1.5 py-1 ${isFinal ? "bg-success/10 border border-success/30" : ""}`}
-                        >
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={() => toggleMilestone(project.id, idx)}
-                            className="mt-0.5"
-                          />
-                          <span className={`leading-tight ${checked ? "line-through text-muted-foreground" : ""} ${isFinal ? "font-semibold" : ""}`}>
-                            {label}
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
+                  <MilestoneChecklist
+                    project={project}
+                    onToggle={(mid) => toggleMilestone(project.id, mid)}
+                    onAdd={(label) => addMilestone(project.id, label)}
+                    onRename={(mid, label) => renameMilestone(project.id, mid, label)}
+                    onDelete={(mid) => deleteMilestone(project.id, mid)}
+                  />
                 )}
 
                 {urgency === "overdue" && (
@@ -850,15 +842,15 @@ function ProjectsPage() {
                       variant="outline"
                       size="sm"
                       className="w-full text-xs"
-                      disabled={!firstThreeDone}
+                      disabled={!evidenceUnlocked}
                       onClick={() => markEvidenceUploaded(project.id)}
                     >
                       <Upload className="h-3.5 w-3.5" />
                       Upload Evidence to Verify
                     </Button>
-                    {!firstThreeDone && (
+                    {!evidenceUnlocked && (
                       <p className="text-[10px] text-muted-foreground text-center">
-                        Complete first 3 milestones to unlock
+                        Complete all milestones except the final one to unlock
                       </p>
                     )}
                   </div>
@@ -867,6 +859,130 @@ function ProjectsPage() {
             </Card>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// ---------------- MilestoneChecklist ----------------
+
+function MilestoneChecklist({
+  project,
+  onToggle,
+  onAdd,
+  onRename,
+  onDelete,
+}: {
+  project: Project;
+  onToggle: (milestoneId: string) => void;
+  onAdd: (label: string) => void;
+  onRename: (milestoneId: string, label: string) => void;
+  onDelete: (milestoneId: string) => void;
+}) {
+  const [newLabel, setNewLabel] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftLabel, setDraftLabel] = useState("");
+
+  const startEdit = (m: Milestone) => {
+    setEditingId(m.id);
+    setDraftLabel(m.label);
+  };
+  const commitEdit = () => {
+    if (editingId && draftLabel.trim()) onRename(editingId, draftLabel.trim());
+    setEditingId(null);
+    setDraftLabel("");
+  };
+
+  return (
+    <div className="space-y-2 rounded-md border bg-muted/30 p-2.5">
+      {project.milestones.length === 0 && (
+        <p className="text-xs text-muted-foreground italic">
+          No milestones yet — add one below.
+        </p>
+      )}
+      {project.milestones.map((m, idx) => {
+        const isFinal = idx === project.milestones.length - 1;
+        const isEditing = editingId === m.id;
+        return (
+          <div
+            key={m.id}
+            className={`flex items-start gap-2 text-xs rounded px-1.5 py-1 ${isFinal ? "bg-success/10 border border-success/30" : ""}`}
+          >
+            <Checkbox
+              checked={m.done}
+              onCheckedChange={() => onToggle(m.id)}
+              className="mt-0.5"
+            />
+            {isEditing ? (
+              <Input
+                autoFocus
+                value={draftLabel}
+                onChange={(e) => setDraftLabel(e.target.value)}
+                onBlur={commitEdit}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitEdit();
+                  if (e.key === "Escape") {
+                    setEditingId(null);
+                    setDraftLabel("");
+                  }
+                }}
+                className="h-6 text-xs px-1.5"
+              />
+            ) : (
+              <span
+                onDoubleClick={() => startEdit(m)}
+                className={`flex-1 leading-tight cursor-text ${m.done ? "line-through text-muted-foreground" : ""} ${isFinal ? "font-semibold" : ""}`}
+                title="Double-click to rename"
+              >
+                {m.label}
+              </span>
+            )}
+            <div className="flex gap-0.5 shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5"
+                onClick={() => startEdit(m)}
+              >
+                <Pencil className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5 text-destructive"
+                onClick={() => onDelete(m.id)}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        );
+      })}
+      <div className="flex gap-1 pt-1">
+        <Input
+          placeholder="Add milestone…"
+          value={newLabel}
+          onChange={(e) => setNewLabel(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              onAdd(newLabel);
+              setNewLabel("");
+            }
+          }}
+          className="h-7 text-xs"
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 px-2 text-xs"
+          onClick={() => {
+            onAdd(newLabel);
+            setNewLabel("");
+          }}
+          disabled={!newLabel.trim()}
+        >
+          <Plus className="h-3 w-3" />
+        </Button>
       </div>
     </div>
   );

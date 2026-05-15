@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -34,6 +36,8 @@ import {
   TrendingDown,
   CalendarClock,
   Bell,
+  Calculator,
+  ListChecks,
 } from "lucide-react";
 
 export const Route = createFileRoute("/projects")({
@@ -43,6 +47,22 @@ export const Route = createFileRoute("/projects")({
 type ProjectStatus = "Planned" | "In Progress" | "Completed";
 type ProjectCategory = "Energy Efficiency" | "Transport" | "Waste" | "Water" | "Renewable Energy" | "Other";
 type ReminderOption = "none" | "10days" | "7days" | "3days";
+type WizardMode = "energy" | "transport" | "custom";
+type FuelType = "Petrol" | "Diesel" | "EV";
+
+const MILESTONES = [
+  "Project Scoped & Quote Received",
+  "Internal Approval & Budget Secured",
+  "Implementation/Installation Started",
+  "Completion & Evidence Collection",
+];
+
+const FUEL_FACTORS: Record<FuelType, number> = {
+  Petrol: 0.28,
+  Diesel: 0.27,
+  EV: 0.05,
+};
+const KWH_FACTOR = 0.207;
 
 const reminderOptions: { value: ReminderOption; label: string; days: number }[] = [
   { value: "none", label: "No Reminder", days: 0 },
@@ -61,6 +81,8 @@ interface Project {
   reminder: ReminderOption;
   evidence?: string;
   createdAt: string;
+  calculationNote?: string;
+  milestonesCompleted?: number[];
 }
 
 const categoryOptions: ProjectCategory[] = [
@@ -84,6 +106,8 @@ const initialProjects: Project[] = [
     status: "In Progress",
     reminder: "7days",
     createdAt: "2026-01-15",
+    milestonesCompleted: [0, 1],
+    calculationNote: "Reduced 2,415 kWh at 0.207 kg/kWh factor",
   },
   {
     id: "2",
@@ -94,6 +118,7 @@ const initialProjects: Project[] = [
     status: "Planned",
     reminder: "10days",
     createdAt: "2026-02-01",
+    milestonesCompleted: [],
   },
   {
     id: "3",
@@ -104,6 +129,7 @@ const initialProjects: Project[] = [
     status: "Planned",
     reminder: "3days",
     createdAt: "2025-06-10",
+    milestonesCompleted: [],
   },
   {
     id: "4",
@@ -115,6 +141,7 @@ const initialProjects: Project[] = [
     evidence: "invoice-waste-2026.pdf",
     reminder: "none",
     createdAt: "2025-09-20",
+    milestonesCompleted: [0, 1, 2, 3],
   },
 ];
 
@@ -194,6 +221,48 @@ function ProjectsPage() {
   const [formSavings, setFormSavings] = useState("");
   const [formStatus, setFormStatus] = useState<ProjectStatus>("Planned");
   const [formReminder, setFormReminder] = useState<ReminderOption>("7days");
+  const [formNote, setFormNote] = useState("");
+
+  // Wizard state
+  const [wizardMode, setWizardMode] = useState<WizardMode>("energy");
+  const [currentKwh, setCurrentKwh] = useState("");
+  const [newKwh, setNewKwh] = useState("");
+  const [annualMiles, setAnnualMiles] = useState("");
+  const [fuelType, setFuelType] = useState<FuelType>("Petrol");
+  const [customSavings, setCustomSavings] = useState("");
+
+  // Recompute savings + note as wizard inputs change
+  const recompute = (
+    mode: WizardMode,
+    cur: string,
+    nw: string,
+    miles: string,
+    fuel: FuelType,
+    custom: string,
+  ) => {
+    if (mode === "energy") {
+      const c = Number(cur) || 0;
+      const n = Number(nw) || 0;
+      const reduced = Math.max(c - n, 0);
+      const savings = Math.round(reduced * KWH_FACTOR);
+      setFormSavings(String(savings));
+      setFormNote(reduced > 0
+        ? `Reduced ${reduced.toLocaleString()} kWh at ${KWH_FACTOR} kg/kWh factor = ${savings.toLocaleString()} kg CO₂e`
+        : "");
+    } else if (mode === "transport") {
+      const m = Number(miles) || 0;
+      const factor = FUEL_FACTORS[fuel];
+      const savings = Math.round(m * factor);
+      setFormSavings(String(savings));
+      setFormNote(m > 0
+        ? `${m.toLocaleString()} ${fuel} miles avoided at ${factor} kg/mile factor = ${savings.toLocaleString()} kg CO₂e`
+        : "");
+    } else {
+      const v = Number(custom) || 0;
+      setFormSavings(String(v));
+      setFormNote(v > 0 ? `Manual estimate: ${v.toLocaleString()} kg CO₂e (user-entered)` : "");
+    }
+  };
 
   const resetForm = () => {
     setFormName("");
@@ -203,6 +272,13 @@ function ProjectsPage() {
     setFormStatus("Planned");
     setFormReminder("7days");
     setEditingId(null);
+    setFormNote("");
+    setWizardMode("energy");
+    setCurrentKwh("");
+    setNewKwh("");
+    setAnnualMiles("");
+    setFuelType("Petrol");
+    setCustomSavings("");
   };
 
   const openNew = () => {
@@ -218,6 +294,9 @@ function ProjectsPage() {
     setFormStatus(p.status);
     setFormReminder(p.reminder);
     setEditingId(p.id);
+    setFormNote(p.calculationNote ?? "");
+    setWizardMode("custom");
+    setCustomSavings(String(p.estimatedSavings));
     setDialogOpen(true);
   };
 
@@ -227,7 +306,7 @@ function ProjectsPage() {
       setProjects((prev) =>
         prev.map((p) =>
           p.id === editingId
-            ? { ...p, name: formName, category: formCategory, targetDate: formDate, estimatedSavings: Number(formSavings), status: formStatus, reminder: formReminder }
+            ? { ...p, name: formName, category: formCategory, targetDate: formDate, estimatedSavings: Number(formSavings), status: formStatus, reminder: formReminder, calculationNote: formNote }
             : p,
         ),
       );
@@ -241,6 +320,8 @@ function ProjectsPage() {
         status: formStatus,
         reminder: formReminder,
         createdAt: new Date().toISOString().slice(0, 10),
+        calculationNote: formNote,
+        milestonesCompleted: [],
       };
       setProjects((prev) => [...prev, newProject]);
     }
@@ -250,6 +331,35 @@ function ProjectsPage() {
 
   const handleDelete = (id: string) => {
     setProjects((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const toggleMilestone = (projectId: string, idx: number) => {
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== projectId) return p;
+        const current = p.milestonesCompleted ?? [];
+        const next = current.includes(idx)
+          ? current.filter((i) => i !== idx)
+          : [...current, idx];
+        return { ...p, milestonesCompleted: next };
+      }),
+    );
+  };
+
+  const markEvidenceUploaded = (projectId: string) => {
+    const filename = `evidence-${projectId.slice(0, 6)}-${new Date().getFullYear()}.pdf`;
+    setProjects((prev) =>
+      prev.map((p) =>
+        p.id === projectId
+          ? {
+              ...p,
+              evidence: filename,
+              status: "Completed" as ProjectStatus,
+              milestonesCompleted: [0, 1, 2, 3],
+            }
+          : p,
+      ),
+    );
   };
 
   // stats
@@ -318,9 +428,126 @@ function ProjectsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Estimated Savings (kg CO₂e)</Label>
-                  <Input type="number" placeholder="500" value={formSavings} onChange={(e) => setFormSavings(e.target.value)} />
+                  <Input type="number" value={formSavings} readOnly className="bg-muted/40 font-semibold" />
                 </div>
               </div>
+
+              {/* Carbon Savings Wizard */}
+              <div className="rounded-lg bg-muted/50 border p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Calculator className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold">Carbon Savings Wizard</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Calculation Mode</Label>
+                  <Select
+                    value={wizardMode}
+                    onValueChange={(v) => {
+                      const m = v as WizardMode;
+                      setWizardMode(m);
+                      recompute(m, currentKwh, newKwh, annualMiles, fuelType, customSavings);
+                    }}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="energy">Energy (kWh)</SelectItem>
+                      <SelectItem value="transport">Transport (Miles)</SelectItem>
+                      <SelectItem value="custom">Custom (Manual)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {wizardMode === "energy" && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Current Annual kWh</Label>
+                      <Input
+                        type="number"
+                        placeholder="10000"
+                        value={currentKwh}
+                        onChange={(e) => {
+                          setCurrentKwh(e.target.value);
+                          recompute("energy", e.target.value, newKwh, annualMiles, fuelType, customSavings);
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Estimated New kWh</Label>
+                      <Input
+                        type="number"
+                        placeholder="5000"
+                        value={newKwh}
+                        onChange={(e) => {
+                          setNewKwh(e.target.value);
+                          recompute("energy", currentKwh, e.target.value, annualMiles, fuelType, customSavings);
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {wizardMode === "transport" && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Annual Miles Avoided</Label>
+                      <Input
+                        type="number"
+                        placeholder="5000"
+                        value={annualMiles}
+                        onChange={(e) => {
+                          setAnnualMiles(e.target.value);
+                          recompute("transport", currentKwh, newKwh, e.target.value, fuelType, customSavings);
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Fuel Type</Label>
+                      <Select
+                        value={fuelType}
+                        onValueChange={(v) => {
+                          const f = v as FuelType;
+                          setFuelType(f);
+                          recompute("transport", currentKwh, newKwh, annualMiles, f, customSavings);
+                        }}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Petrol">Petrol (0.28 kg/mi)</SelectItem>
+                          <SelectItem value="Diesel">Diesel (0.27 kg/mi)</SelectItem>
+                          <SelectItem value="EV">EV (0.05 kg/mi)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+
+                {wizardMode === "custom" && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Manual kg CO₂e</Label>
+                    <Input
+                      type="number"
+                      placeholder="500"
+                      value={customSavings}
+                      onChange={(e) => {
+                        setCustomSavings(e.target.value);
+                        recompute("custom", currentKwh, newKwh, annualMiles, fuelType, e.target.value);
+                      }}
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Calculation Note (Audit Trail)</Label>
+                  <Textarea
+                    rows={2}
+                    value={formNote}
+                    onChange={(e) => setFormNote(e.target.value)}
+                    placeholder="Auto-filled from wizard inputs — editable for audit context"
+                    className="text-xs bg-background"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={formStatus} onValueChange={(v) => setFormStatus(v as ProjectStatus)}>
@@ -437,6 +664,11 @@ function ProjectsPage() {
           const urgency = getProjectUrgency(project);
           const daysLeft = getDaysUntil(project.targetDate);
           const reminderStatus = getReminderStatus(project);
+          const milestones = project.milestonesCompleted ?? [];
+          const milestonesDone = milestones.length;
+          const firstThreeDone = [0, 1, 2].every((i) => milestones.includes(i));
+          const isCompleted = project.status === "Completed";
+          const progressColor = isCompleted ? "bg-success" : "bg-primary";
           return (
             <Card
               key={project.id}
@@ -477,6 +709,48 @@ function ProjectsPage() {
                   </div>
                 </div>
 
+                {/* Milestone progress bar */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <ListChecks className="h-3.5 w-3.5" />
+                      Milestones
+                    </span>
+                    <span className="font-semibold">{milestonesDone}/{MILESTONES.length}</span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={`h-full transition-all duration-500 ${progressColor}`}
+                      style={{ width: `${(milestonesDone / MILESTONES.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Milestone checklist (In Progress only) */}
+                {project.status === "In Progress" && (
+                  <div className="space-y-1.5 rounded-md border bg-muted/30 p-2.5">
+                    {MILESTONES.map((label, idx) => {
+                      const checked = milestones.includes(idx);
+                      const isFinal = idx === MILESTONES.length - 1;
+                      return (
+                        <label
+                          key={idx}
+                          className={`flex items-start gap-2 text-xs cursor-pointer rounded px-1.5 py-1 ${isFinal ? "bg-success/10 border border-success/30" : ""}`}
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={() => toggleMilestone(project.id, idx)}
+                            className="mt-0.5"
+                          />
+                          <span className={`leading-tight ${checked ? "line-through text-muted-foreground" : ""} ${isFinal ? "font-semibold" : ""}`}>
+                            {label}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {urgency === "overdue" && (
                   <div className="rounded-md bg-destructive/5 p-2.5 text-xs text-destructive flex items-center gap-1.5">
                     <AlertTriangle className="h-3.5 w-3.5" />
@@ -504,10 +778,23 @@ function ProjectsPage() {
                     Evidence: {project.evidence}
                   </div>
                 ) : project.status !== "Completed" ? (
-                  <Button variant="outline" size="sm" className="w-full text-xs">
-                    <Upload className="h-3.5 w-3.5" />
-                    Upload Evidence to Verify
-                  </Button>
+                  <div className="space-y-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                      disabled={!firstThreeDone}
+                      onClick={() => markEvidenceUploaded(project.id)}
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      Upload Evidence to Verify
+                    </Button>
+                    {!firstThreeDone && (
+                      <p className="text-[10px] text-muted-foreground text-center">
+                        Complete first 3 milestones to unlock
+                      </p>
+                    )}
+                  </div>
                 ) : null}
               </CardContent>
             </Card>

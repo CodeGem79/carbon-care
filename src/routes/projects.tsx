@@ -50,12 +50,19 @@ type ReminderOption = "none" | "10days" | "7days" | "3days";
 type WizardMode = "energy" | "transport" | "custom";
 type FuelType = "Petrol" | "Diesel" | "EV";
 
-const MILESTONES = [
+const DEFAULT_MILESTONE_LABELS = [
   "Project Scoped & Quote Received",
   "Internal Approval & Budget Secured",
   "Implementation/Installation Started",
   "Completion & Evidence Collection",
 ];
+
+const makeDefaultMilestones = (): Milestone[] =>
+  DEFAULT_MILESTONE_LABELS.map((label) => ({
+    id: crypto.randomUUID(),
+    label,
+    done: false,
+  }));
 
 const FUEL_FACTORS: Record<FuelType, number> = {
   Petrol: 0.28,
@@ -71,6 +78,12 @@ const reminderOptions: { value: ReminderOption; label: string; days: number }[] 
   { value: "3days", label: "3 days before", days: 3 },
 ];
 
+interface Milestone {
+  id: string;
+  label: string;
+  done: boolean;
+}
+
 interface Project {
   id: string;
   name: string;
@@ -82,7 +95,7 @@ interface Project {
   evidence?: string;
   createdAt: string;
   calculationNote?: string;
-  milestonesCompleted?: number[];
+  milestones: Milestone[];
 }
 
 const categoryOptions: ProjectCategory[] = [

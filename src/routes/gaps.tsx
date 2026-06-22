@@ -65,8 +65,8 @@ const SITES: SiteBlueprint[] = [
     logged: {
       electricity: all(),
       // Missing Jan 2026 (index 9) for gas + water
-      gas: MONTHS.map((_, i) => i !== 9),
-      water: MONTHS.map((_, i) => i !== 9),
+      gas: MONTH_LABELS.map((_, i) => i !== 9),
+      water: MONTH_LABELS.map((_, i) => i !== 9),
     },
   },
   {
@@ -75,7 +75,7 @@ const SITES: SiteBlueprint[] = [
     utilities: ["electricity"], // gas N/A here
     logged: {
       // Missing Feb 2026 (index 10)
-      electricity: MONTHS.map((_, i) => i !== 10),
+      electricity: MONTH_LABELS.map((_, i) => i !== 10),
     },
   },
   {

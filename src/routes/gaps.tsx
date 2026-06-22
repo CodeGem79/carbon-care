@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   MapPin,
   ShieldCheck,
@@ -13,6 +14,9 @@ import {
   Droplets,
   Trash2,
   Plane,
+  Check,
+  X,
+  Minus,
 } from "lucide-react";
 
 export const Route = createFileRoute("/gaps")({
@@ -29,22 +33,29 @@ const UTILITY_META: Record<UtilityKey, { label: string; action: string; Icon: ty
   travel: { label: "Business Travel Entry", action: "Add Travel Log", Icon: Plane },
 };
 
-const MONTHS = [
-  "Apr 2025", "May 2025", "Jun 2025", "Jul 2025", "Aug 2025", "Sep 2025",
-  "Oct 2025", "Nov 2025", "Dec 2025", "Jan 2026", "Feb 2026", "Mar 2026",
-] as const;
+const MONTH_LABELS = ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"] as const;
+
+const FY_START_YEAR = 2024;
+const FY_END_YEAR = 2030;
+const FINANCIAL_YEARS = Array.from({ length: FY_END_YEAR - FY_START_YEAR + 1 }, (_, i) => {
+  const start = FY_START_YEAR + i;
+  return `${start}/${String(start + 1).slice(-2)}`;
+});
+
+function buildMonths(fy: string): string[] {
+  const startYear = Number(fy.slice(0, 4));
+  return MONTH_LABELS.map((m, i) => `${m} ${i <= 8 ? startYear : startYear + 1}`);
+}
 
 type SiteBlueprint = {
   id: string;
   name: string;
   utilities: UtilityKey[]; // only the utilities required at this site
-  // logged[utility] = boolean[] aligned to MONTHS
+  // logged[utility] = boolean[] aligned to the 12 FY months
   logged: Partial<Record<UtilityKey, boolean[]>>;
 };
 
-const f = (...trueIdx: number[]) =>
-  MONTHS.map((_, i) => trueIdx.includes(i));
-const all = () => MONTHS.map(() => true);
+const all = () => MONTH_LABELS.map(() => true);
 
 const SITES: SiteBlueprint[] = [
   {
@@ -54,8 +65,8 @@ const SITES: SiteBlueprint[] = [
     logged: {
       electricity: all(),
       // Missing Jan 2026 (index 9) for gas + water
-      gas: MONTHS.map((_, i) => i !== 9),
-      water: MONTHS.map((_, i) => i !== 9),
+      gas: MONTH_LABELS.map((_, i) => i !== 9),
+      water: MONTH_LABELS.map((_, i) => i !== 9),
     },
   },
   {
@@ -64,7 +75,7 @@ const SITES: SiteBlueprint[] = [
     utilities: ["electricity"], // gas N/A here
     logged: {
       // Missing Feb 2026 (index 10)
-      electricity: MONTHS.map((_, i) => i !== 10),
+      electricity: MONTH_LABELS.map((_, i) => i !== 10),
     },
   },
   {
@@ -82,6 +93,8 @@ type Gap = { siteId: string; siteName: string; utility: UtilityKey; monthIdx: nu
 
 function GapsPage() {
   const [gapsOnly, setGapsOnly] = useState(true);
+  const [selectedFY, setSelectedFY] = useState("2025/26");
+  const months = useMemo(() => buildMonths(selectedFY), [selectedFY]);
 
   const { gaps, totalRequired, totalLogged, fullySiteUtilityProfiles, totalSiteUtilityProfiles } =
     useMemo(() => {
@@ -93,7 +106,7 @@ function GapsPage() {
       for (const site of SITES) {
         for (const util of site.utilities) {
           totalProfiles += 1;
-          const arr = site.logged[util] ?? MONTHS.map(() => false);
+          const arr = site.logged[util] ?? MONTH_LABELS.map(() => false);
           let allLogged = true;
           arr.forEach((ok, i) => {
             required += 1;
@@ -113,7 +126,7 @@ function GapsPage() {
         fullySiteUtilityProfiles: fullProfiles,
         totalSiteUtilityProfiles: totalProfiles,
       };
-    }, []);
+    }, [selectedFY]);
 
   const coverage = Math.round((totalLogged / totalRequired) * 100);
 
@@ -131,10 +144,77 @@ function GapsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Tender-Ready Pre-Submission Audit</h1>
-        <p className="text-muted-foreground">FY 2025/26 — PPN 06/21 verification readiness</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Tender-Ready Pre-Submission Audit</h1>
+          <p className="text-muted-foreground">FY {selectedFY} — PPN 06/21 verification readiness</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Label className="text-xs text-muted-foreground">Financial Year</Label>
+          <Select value={selectedFY} onValueChange={setSelectedFY}>
+            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {FINANCIAL_YEARS.map((fy) => (
+                <SelectItem key={fy} value={fy}>FY {fy}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+
+      {/* At-a-glance compliance matrix */}
+      <Card className="border-slate-200 dark:border-slate-800">
+        <CardHeader>
+          <CardTitle className="text-base">Compliance Matrix — At a Glance</CardTitle>
+          <CardDescription>
+            Site × month coverage for FY {selectedFY}. Hover a cell for detail.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-xs">
+              <thead>
+                <tr>
+                  <th className="sticky left-0 z-10 bg-card p-2 text-left font-medium text-muted-foreground">
+                    Site / Utility
+                  </th>
+                  {months.map((m) => (
+                    <th key={m} className="p-1 text-center font-medium text-muted-foreground">
+                      <div className="leading-tight">{m.split(" ")[0]}</div>
+                      <div className="text-[10px] opacity-60">{m.split(" ")[1]}</div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {SITES.map((site) => (
+                  <SiteMatrixRows key={site.id} site={site} months={months} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 pt-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-emerald-600 text-white">
+                <Check className="h-3 w-3" />
+              </span>
+              Logged
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-amber-500 text-white">
+                <X className="h-3 w-3" />
+              </span>
+              Missing
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                <Minus className="h-3 w-3" />
+              </span>
+              Not applicable
+            </span>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="border-slate-200 dark:border-slate-800">
         <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
@@ -193,13 +273,13 @@ function GapsPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {(gapsOnly ? byMonth : MONTHS.map((_, i) => [i, byMonth.find(([m]) => m === i)?.[1] ?? []] as [number, Gap[]])).map(
+              {(gapsOnly ? byMonth : MONTH_LABELS.map((_, i) => [i, byMonth.find(([m]) => m === i)?.[1] ?? []] as [number, Gap[]])).map(
                 ([monthIdx, monthGaps]) => {
                   if (gapsOnly && monthGaps.length === 0) return null;
                   return (
                     <MonthBlock
                       key={monthIdx}
-                      month={MONTHS[monthIdx]}
+                      month={months[monthIdx]}
                       gaps={monthGaps}
                     />
                   );
@@ -210,6 +290,62 @@ function GapsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function SiteMatrixRows({ site, months }: { site: SiteBlueprint; months: string[] }) {
+  const allUtils: UtilityKey[] = ["electricity", "gas", "water", "waste", "travel"];
+  return (
+    <>
+      {allUtils.map((util, rowIdx) => {
+        const required = site.utilities.includes(util);
+        const arr = site.logged[util];
+        const meta = UTILITY_META[util];
+        const Icon = meta.Icon;
+        return (
+          <tr key={util} className="border-t border-slate-100 dark:border-slate-800">
+            <td className="sticky left-0 z-10 bg-card p-2 whitespace-nowrap">
+              {rowIdx === 0 && (
+                <div className="mb-1 flex items-center gap-1.5 font-semibold text-slate-900 dark:text-slate-100">
+                  <MapPin className="h-3 w-3" /> {site.name}
+                </div>
+              )}
+              <div className="flex items-center gap-1.5 pl-4 text-muted-foreground">
+                <Icon className="h-3 w-3" />
+                <span className="capitalize">{util}</span>
+              </div>
+            </td>
+            {months.map((m, i) => {
+              if (!required) {
+                return (
+                  <td key={m} className="p-1 text-center">
+                    <span
+                      title="Not applicable at this site"
+                      className="mx-auto inline-flex h-5 w-5 items-center justify-center rounded-sm bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </span>
+                  </td>
+                );
+              }
+              const ok = arr?.[i] ?? false;
+              return (
+                <td key={m} className="p-1 text-center">
+                  <span
+                    title={`${site.name} · ${util} · ${m} — ${ok ? "Logged" : "Missing"}`}
+                    className={`mx-auto inline-flex h-5 w-5 items-center justify-center rounded-sm text-white ${
+                      ok ? "bg-emerald-600" : "bg-amber-500"
+                    }`}
+                  >
+                    {ok ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                  </span>
+                </td>
+              );
+            })}
+          </tr>
+        );
+      })}
+    </>
   );
 }
 

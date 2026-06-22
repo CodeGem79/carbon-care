@@ -24,11 +24,30 @@ const months = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+// Generate financial years dynamically (UK FY: April → March)
+const FY_START = 2024;
+const FY_END = 2030;
+const financialYears = Array.from(
+  { length: FY_END - FY_START + 1 },
+  (_, i) => {
+    const start = FY_START + i;
+    return `${start}/${String(start + 1).slice(-2)}`;
+  },
+);
+
+function currentFY(): string {
+  const now = new Date();
+  const startYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  const clamped = Math.min(Math.max(startYear, FY_START), FY_END);
+  return `${clamped}/${String(clamped + 1).slice(-2)}`;
+}
+
 function AuditPage() {
   const [type, setType] = useState("Electricity");
   const [unit, setUnit] = useState("kWh");
   const [value, setValue] = useState("");
   const [billingMonth, setBillingMonth] = useState(String(new Date().getMonth()));
+  const [financialYear, setFinancialYear] = useState(currentFY());
   const [location, setLocation] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
@@ -113,7 +132,22 @@ function AuditPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Location</Label>
+                <Label>Financial Year</Label>
+                <Select value={financialYear} onValueChange={setFinancialYear}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {financialYears.map((fy) => (
+                      <SelectItem key={fy} value={fy}>FY {fy}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Location</Label>
                 <Select value={location} onValueChange={setLocation}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select site..." />
@@ -125,7 +159,6 @@ function AuditPage() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
             <div className="space-y-2">
               <Label>Evidence (Optional)</Label>

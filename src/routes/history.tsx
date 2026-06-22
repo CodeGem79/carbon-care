@@ -52,6 +52,23 @@ const allEntries: Entry[] = [
 
 const MONTHS = ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
 
+const FY_START_YEAR = 2024;
+const FY_END_YEAR = 2030;
+const FINANCIAL_YEARS = Array.from(
+  { length: FY_END_YEAR - FY_START_YEAR + 1 },
+  (_, i) => {
+    const start = FY_START_YEAR + i;
+    return `${start}/${String(start + 1).slice(-2)}`;
+  },
+);
+
+// Map an entry's (month, calendar year) to a UK financial year label "YYYY/YY".
+function entryFY(month: string, year: number): string {
+  const idx = MONTHS.indexOf(month); // 0..2 = Apr..Jun => FY starts in `year`; 9..11 = Jan..Mar => FY started year-1
+  const startYear = idx >= 0 && idx <= 8 ? year : year - 1;
+  return `${startYear}/${String(startYear + 1).slice(-2)}`;
+}
+
 const MONTHLY_TARGET = { s1: 200, s2: 200, s3: 100 };
 const TOTAL_TARGET = MONTHLY_TARGET.s1 + MONTHLY_TARGET.s2 + MONTHLY_TARGET.s3;
 
@@ -59,6 +76,7 @@ function HistoryPage() {
   const [selectedMonth, setSelectedMonth] = useState("ALL");
   const [selectedScope, setSelectedScope] = useState("ALL");
   const [selectedType, setSelectedType] = useState("ALL");
+  const [selectedFY, setSelectedFY] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [drawerEntry, setDrawerEntry] = useState<Entry | null>(null);
   const [entries, setEntries] = useState<Entry[]>(allEntries);
@@ -68,10 +86,11 @@ function HistoryPage() {
       if (selectedMonth !== "ALL" && e.month !== selectedMonth) return false;
       if (selectedScope !== "ALL" && e.scope !== selectedScope) return false;
       if (selectedType !== "ALL" && e.type !== selectedType) return false;
+      if (selectedFY !== "ALL" && entryFY(e.month, e.year) !== selectedFY) return false;
       if (searchQuery && !e.site.toLowerCase().includes(searchQuery.toLowerCase()) && !e.type.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     });
-  }, [selectedMonth, selectedScope, selectedType, searchQuery, entries]);
+  }, [selectedMonth, selectedScope, selectedType, selectedFY, searchQuery, entries]);
 
   const handleDelete = (id: number) => {
     setEntries((prev) => prev.filter((e) => e.id !== id));
@@ -209,6 +228,15 @@ function HistoryPage() {
             <SelectItem value="Water">Water</SelectItem>
             <SelectItem value="Diesel">Diesel</SelectItem>
             <SelectItem value="Waste">Waste</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={selectedFY} onValueChange={setSelectedFY}>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Financial Year" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Years</SelectItem>
+            {FINANCIAL_YEARS.map((fy) => (
+              <SelectItem key={fy} value={fy}>FY {fy}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
